@@ -1,0 +1,115 @@
+
+source('load_libraries.R')
+source('read_data.R')
+source('functions_for_network_analysis.R')
+
+
+
+#create a list of networks for each cell type
+#Celltype1:
+
+list=list(ex_genie,ex_grnbst,ex_pidc)
+
+
+ex_genie.df=rank_network_edges(ex_genie,200000,"ex_genie")
+ex_grnbst.df=rank_network_edges(ex_grnbst,200000,"ex_grnbst")
+ex_pidc.df=rank_network_edges(ex_pidc,200000,"ex_pidc")
+
+
+exNetworks.list <- list(ex_genie.df, ex_grnbst.df, ex_pidc.df)
+
+exNetworks.matrix=combine_network_dfs(exNetworks.list)
+
+exNetworks.matrix=exNetworks.matrix %>% replace_na(list(ex_genie_rank = (max(exNetworks.matrix$ex_genie_rank, na.rm=TRUE)+1),
+	ex_grnbst_rank =(max(exNetworks.matrix$ex_grnbst_rank, na.rm=TRUE)+1),
+	ex_pidc_rank=(max(exNetworks.matrix$ex_pidc_rank, na.rm=TRUE)+1)))
+
+ex.consensus=arr(exNetworks.matrix,100000)
+ex.loregic.out=edgelist2triplets(ex.consensus[,1:2])
+ex.hubs=get_hubs(ex.consensus)
+colnames(ex.hubs)=c("ex")
+ex.loregic.hubScores=calculate_triplet_hubScores(ex.loregic.out,ex.hubs)
+
+ex.target_pairs=find_target_pairs(ex.consensus,0.1)
+
+###############################################
+
+in_genie.df=rank_network_edges(in_genie)
+colnames(in_genie.df)=c("edge","in_genie_rank")
+in_grnbst.df=rank_network_edges(in_grnbst)
+colnames(in_grnbst.df)=c("edge","in_grnbst_rank")
+in_pidc.df=rank_network_edges(in_pidc)
+colnames(in_pidc.df)=c("edge","in_pidc_rank")
+
+inNetworks.list <- list(in_genie.df, in_grnbst.df, in_pidc.df)
+
+inNetworks.matrix=combine_network_dfs(inNetworks.list)
+
+inNetworks.matrix=inNetworks.matrix %>% replace_na(list(in_genie_rank = (max(inNetworks.matrix$in_genie_rank, na.rm=TRUE)+1),
+	in_grnbst_rank =(max(inNetworks.matrix$in_grnbst_rank, na.rm=TRUE)+1),
+	in_pidc_rank=(max(inNetworks.matrix$in_pidc_rank, na.rm=TRUE)+1)))
+
+in.consensus=arr(inNetworks.matrix,100000)
+in.loregic.out=edgelist2triplets(in.consensus[,1:2])
+in.hubs=get_hubs(in.consensus)
+colnames(in.hubs)=c("in")
+in.loregic.hubScores=calculate_triplet_hubScores(in.loregic.out,in.hubs)
+
+in.target_pairs=find_target_pairs(in.consensus,0.1)
+
+
+############
+
+
+oligo_genie.df=rank_network_edges(oligo_genie)
+colnames(oligo_genie.df)=c("edge","oligo_genie_rank")
+oligo_grnbst.df=rank_network_edges(oligo_grnbst)
+colnames(oligo_grnbst.df)=c("edge","oligo_grnbst_rank")
+oligo_pidc.df=rank_network_edges(oligo_pidc)
+colnames(oligo_pidc.df)=c("edge","oligo_pidc_rank")
+
+oligoNetworks.list <- list(oligo_genie.df, oligo_grnbst.df, oligo_pidc.df)
+
+oligoNetworks.matrix=combine_network_dfs(oligoNetworks.list)
+
+oligoNetworks.matrix=oligoNetworks.matrix %>% replace_na(list(oligo_genie_rank = (max(oligoNetworks.matrix$oligo_genie_rank, na.rm=TRUE)+1),
+	oligo_grnbst_rank =(max(oligoNetworks.matrix$oligo_grnbst_rank, na.rm=TRUE)+1),
+	oligo_pidc_rank=(max(oligoNetworks.matrix$oligo_pidc_rank, na.rm=TRUE)+1)))
+
+oligo.consensus=arr(oligoNetworks.matrix,100000)
+oligo.loregic.out=edgelist2triplets(oligo.consensus[,1:2])
+oligo.hubs=get_hubs(oligo.consensus)
+colnames(oligo.hubs)=c("oligo")
+
+oligo.loregic.hubScores=calculate_triplet_hubScores(oligo.loregic.out,oligo.hubs)
+
+oligo.target_pairs=find_target_pairs(oligo.consensus,0.1)
+
+####################
+
+micro_genie.df=rank_network_edges(micro_genie)
+colnames(micro_genie.df)=c("edge","micro_genie_rank")
+micro_grnbst.df=rank_network_edges(micro_grnbst)
+colnames(micro_grnbst.df)=c("edge","micro_grnbst_rank")
+micro_pidc.df=rank_network_edges(micro_pidc)
+colnames(micro_pidc.df)=c("edge","micro_pidc_rank")
+
+microNetworks.list <- list(micro_genie.df, micro_grnbst.df, micro_pidc.df)
+
+microNetworks.matrix=combine_network_dfs(microNetworks.list)
+
+microNetworks.matrix=microNetworks.matrix %>% replace_na(list(micro_genie_rank = (max(microNetworks.matrix$micro_genie_rank, na.rm=TRUE)+1),
+	micro_grnbst_rank =(max(microNetworks.matrix$micro_grnbst_rank, na.rm=TRUE)+1),
+	micro_pidc_rank=(max(microNetworks.matrix$micro_pidc_rank, na.rm=TRUE)+1)))
+
+micro.consensus=arr(microNetworks.matrix,100000)
+
+micro.loregic.out=edgelist2triplets(micro.consensus[,1:2])
+micro.hubs=get_hubs(micro.consensus)
+colnames(micro.hubs)=c("micro")
+
+micro.loregic.hubScores=calculate_triplet_hubScores(micro.loregic.out,micro.hubs)
+
+micro.target_pairs=find_target_pairs(micro.consensus,0.1)
+
+###########################

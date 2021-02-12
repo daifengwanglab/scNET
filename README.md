@@ -24,19 +24,19 @@ The main functions perform the following tasks:
 *Steps 1-4 must be applied to every cell type network before proceeding to step 5*
 
 0. (*Optional*) Construct cell-type consensus GRN by **rank aggregating** networks inferred using different algorithms.
-  + Follows the wisdom of crowds approach to infer a consensus GRN
+  * Follows the wisdom of crowds approach to infer a consensus GRN
 
 
 1. Calculate node **centrality**
-  + Uses the **Page Rank algorithm** implemented in the igraph library to calculate node centralities.  
+  * Uses the **Page Rank algorithm** implemented in the igraph library to calculate node centralities.  
 
 
 2. Identify **network motifs**
-  + Uses the **Loregic** algorithm to identify coordinated TF activities as triplets (TF1-TF2-target)  
+  * Uses the **Loregic** algorithm to identify coordinated TF activities as triplets (TF1-TF2-target)  
 
 
 3. Estimate **Motif importance**   
-  + Calculates the sum of node centrality within each triplet
+  * Calculates the sum of node centrality within each triplet
 
 
 4. **Clustering**

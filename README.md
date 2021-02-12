@@ -58,8 +58,7 @@ source('scripts/functions_for_network_analysis.R')
 
 ##### Read demo data
 ```r
-# Four brain cell type networks (microglia, oligodendrocytes, inhibitory and excitatory neurons)
-
+# Four brain cell type networks (these are random networks for demo purposes)
 # Each inferred using three different algorithms (GENIE3, PIDC, GRNBoost2)
 
 source('scripts/read_demo_data.R')
@@ -75,13 +74,13 @@ This step is optional if you have inferred the network using only one algorithm.
 
 ```r
 #no. of edges to keep in the consensus; test different values
-nedges=200000 #top 10% of all expected edges
+nedges=1000 #top 10% of all expected edges
 
 #create a list with cell type networks as the elements
 ex.list=list(ex_genie,ex_grnbst,ex_pidc)
 
-#call the ara function to crteate the consensus network.
-ex.consensus=ara(ex.list,"ex",100000)
+#call the ara function to create the consensus network.
+ex.consensus=ara(ex.list,"ex",nedges) 
 
 ```
 

@@ -2,7 +2,7 @@
 
 
 #network data directory; change accordingly
-net_data="~/work/scNetAnalysis.beta/data/Brain_GRNs/mufang_yiang_cell_type_networks"
+net_data="./demo_data/Brain_GRNs/mufang_yiang_cell_type_networks"
 
 #genome data directory; change accordingly
 genome_data="/Users/chiraggupta/work/scNetAnalysis.beta/genome"

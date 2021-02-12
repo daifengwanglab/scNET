@@ -6,7 +6,7 @@ source('~/work/scNetAnalysis.beta/scripts/read_data.R')
 source('~/work/scNetAnalysis.beta/scripts/functions_for_network_analysis.R')
 
 
-nedges=200000 #no of edges to keep in the consensus
+nedges=1000 #no of edges to keep in the consensus
 
 #create a list of networks for each cell type
 #Celltype1:

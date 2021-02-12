@@ -13,8 +13,8 @@ If you use this pipeline, please cite:
 The code has been tested on R version 4.0.3 on Mac and Linux OS.
 
 ```r
-git clone
-cd
+git clone https://github.com/cngupta/scNET.git
+cd scNET
 ```
 ___
 
@@ -62,7 +62,7 @@ source('scripts/functions_for_network_analysis.R')
 
 # Each inferred using three different algorithms (GENIE3, PIDC, GRNBoost2)
 
-source('scripts/read_data.R')
+source('scripts/read_demo_data.R')
 ```
 
 #### Consensus Network

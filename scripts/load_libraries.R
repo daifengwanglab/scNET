@@ -1,8 +1,19 @@
-library(dplyr)
-library(tidyr)
-library(Loregic)
-library(igraph)
-library(reshape2)
-library(WGCNA)
-library("flashClust")
-library(arsenal)
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+packages = c("dplyr", "tidyr",
+             "igraph", "Loregic",
+             "reshape2","WGCNA",
+             "flashClust","arsenal",
+             "piano")
+
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      install.packages(x, dependencies = TRUE)
+      library(x, character.only = TRUE)
+    }
+  }
+)

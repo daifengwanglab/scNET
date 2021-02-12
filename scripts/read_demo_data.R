@@ -10,6 +10,7 @@ genome_data="./demo_data/genome"
 
 #Read genome data
 TFs=read.table(paste(genome_data,"TF_names_v_1.01.txt",sep="/"))
+GOBP=read.table(paste(genome_data,"Human_GO_bp_with_GO_iea_symbol.mt3lt500.genesets",sep="/"))
 
 #Read network data; careful of headers
 ex_genie=read.table(paste(net_data,"ex_genie.demo.txt",sep="/"))

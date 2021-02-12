@@ -18,35 +18,6 @@ cd scNET
 ```
 ___
 
-The main functions perform the following tasks:  
-
-
-*Steps 1-4 must be applied to every cell type network before proceeding to step 5*
-
-0. (*Optional*) Construct cell-type consensus GRN by **rank aggregating** networks inferred using different algorithms.
-  -  Follows the wisdom of crowds approach to infer a consensus GRN
-
-
-1. Calculate node **centrality**
-  - Uses the **Page Rank algorithm** implemented in the igraph library to calculate node centralities.  
-
-
-2. Identify **network motifs**
-  * Uses the **Loregic** algorithm to identify coordinated TF activities as triplets (TF1-TF2-target)  
-
-
-3. Estimate **Motif importance**   
-  * Calculates the sum of node centrality within each triplet
-
-
-4. **Clustering**
-  * Clusters target genes into functional modules based on the similarities within their regulators.    
-
-
-5. **Compare** cell type networks  
-  * Finds common and unique network motifs and modules across cell type Networks
-
-___
 
 ## Example
 The first step is to load external libraries and functions required to execute the pipeline:
@@ -74,42 +45,42 @@ This step is optional if you have inferred the network using only one algorithm.
 
 ```r
 #no. of edges to keep in the consensus; test different values
-nedges=1000 #top 10% of all expected edges
+nedges=1000 #just a random number of demo
 
 #create a list with cell type networks as the elements
 ex.list=list(ex_genie,ex_grnbst,ex_pidc)
 
-#call the ara function to create the consensus network.
-ex.consensus=ara(ex.list,"ex",nedges) 
+#call the ara function with the list of data frames, the cell type tag, and the total number of edges as arguments.
+ex.consensus=ara(ex.list,"ex",nedges)
 
 ```
 
 #### Node Centrality
+The `get_pageRank` function calculates node centrality, currently using the Page Rank algorithm.    
 ```r
 #modify to let user choose option (pr, hubscore, degree, betweenness)
 ex.pr=get_pageRank(ex.consensus,"ex")
 ```
+
 #### Regulatory triplets  
+The next step is to find triplets in the network. We use the `edgelist2triplets` function of the `Loregic` package to report network motifs comprising of two TFs and a target gene (TF can also be a target gene).
 ```r
-#two TFs target the same gene
 ex.loregic.out=edgelist2triplets(ex.consensus[,1:2])
 ```
-#### Triplet centrality
+
+#### Triplet importance
+Next, the `calculate_triplet_hubScores` function calculates the importance of every triplet by reporting the sum of page rank scores of each gene in the triplet.
 ```r
-#Sum centrality score of each node in every triplet
 ex.loregic.PRscores=calculate_triplet_hubScores(ex.loregic.out,ex.pr)
 ```
 
 #### Cluster target genes into modules
+To cluster genes into functional modules, the first step is to connect gene-pairs if they have a high overlap between their predicted regulators. The `find_target_pairs` achieves this, based on a user defined threshold as one of the argument. Next, the output of `find_target_pairs` is passed into the function `detect_modules` to cluster genes into modules. The `detect_modules` function uses WGCNA's `TOMsimilarity` function and heirarchical clustering to report modules.
 ```r
-#Uses WGCNA's TOMsimilarity function and heirarchical clustering
-#threshold of 0.5 is arbitrary in this example. Ideally one should
-#test different values
 
-#returns a data frame with three columsn (g1 g2 jaccard)
-ex.target_pairs=find_target_pairs(ex.consensus,0.5) #50% overlap
+#The threshold of 0.5 indicates 50% overlap between the predicted regulators of every target gene-pair. This threshold should ideally be tested for a range of values.
 
-#returns a df with first col as gene and second col as module ID
+ex.target_pairs=find_target_pairs(ex.consensus,0.5)
 ex.modules=detect_modules(ex.target_pairs)
 ```
 

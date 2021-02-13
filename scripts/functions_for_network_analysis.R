@@ -18,6 +18,10 @@ rank_network_edges = function(net,th,tag) #network and threshold for # of edges 
 	#rank edges of each network from 1 to n
 	colnames(net)=c("regulatoryGene","targetGene","weight")
 	net= net %>% filter(regulatoryGene %in% TFs$V1)
+	if(nrow(net) < th)
+	{
+		th=nrow(net)
+	}
 	net$edge=paste(net$regulatoryGene,"-",net$targetGene)
 	net=net[,3:4]
 	net=net[,c(2,1)]

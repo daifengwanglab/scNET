@@ -7,7 +7,7 @@ If you wish to use this pipeline, start with a GRN inferred using any method of 
 
 **Citation**
 
-If you use this pipeline, please cite:
+If you use this pipeline, please cite: *(under development)*
 
 ## Download code
 The code has been tested on R version 4.0.3 on Mac and Linux OS.
@@ -17,7 +17,6 @@ git clone https://github.com/cngupta/scNET.git
 cd scNET
 ```
 ___
-
 
 ## Example
 The first step is to load external libraries and functions required to execute the pipeline:
@@ -84,4 +83,12 @@ ex.target_pairs=find_target_pairs(ex.consensus,0.5)
 ex.modules=detect_modules(ex.target_pairs)
 ```
 
+#### Store results
+```r
+
+```
+
+Repeat these steps for each cell type in your dataset. Then, follow the steps below
+if you wish to compare networks and characterize each cell type.  
 #### Compare local and global network topologies across cell types
+*(under development)*

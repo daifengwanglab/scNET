@@ -130,6 +130,12 @@ get_centrality=function(net, type, tag)
 		rownames(cent)=c()
 		return(cent)
 	}
+	else if (type=="components")
+	{
+	 #no of connected components
+		nCC=components(net.igraph)$no
+		return(nCC)
+	}
 }
 
 calculate_triplet_hubScores=function(loregicOut,hubtbl)
@@ -196,7 +202,7 @@ detect_modules = function(matrix)
 	dissTOM = 1-TOM
 	# Call the hierarchical clustering function
 	geneTree = flashClust(as.dist(dissTOM),method="average");
-	minModuleSize = 20;
+	minModuleSize = 100;
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
 	modules=cbind(as.data.frame(dynamicMods),rownames(matrix))
@@ -205,16 +211,22 @@ detect_modules = function(matrix)
 	modules
 }
 
-gsea = function(cent.mat,topn) #eg 30 for 30%
+gsea = function(cent.mat,nGO,tag) #eg 30 for 30%
 {
-	colnames(cent.mat)=c("score","gene")
-	n=round(dim(cent.mat)[1]*(topn/100))
-	topn=top_n(cent.mat,n,score)
-	cent.mat=topn
+	colnames(cent.mat)= c("score", "gene")
+	cent.mat$gene=gsub(" ","",cent.mat$gene)
+#	universe=cent.mat$gene
+	print(paste("universe:",length(universe),sep=" "))
+#	n=round(dim(cent.mat)[1]*(topn/100))
+#	cent.mat=top_n(cent.mat, n, wt=score)
+#	if(dim(cent.mat)[1]>1500)
+#	{
+#		cent.mat=cent.mat[cent.mat$score > 0,]
+#	}
 	genes=cent.mat$score
 	names(genes)=cent.mat$gene
 	names(genes)=gsub(" ","",names(genes))
-	#selection <- function(allScore){ return(allScore > 0.5)} # function that returns TRUE/FALSE for p-values<0.05
+	selection <- function(allScore){ return(allScore > 0)} # function that returns TRUE/FALSE for p-values<0.05
 	selection <- function(x) TRUE
 	allGO2genes <- annFUN.org(whichOnto="BP", feasibleGenes=NULL, mapping="org.Hs.eg.db", ID="symbol")
 	GOdata <- new("topGOdata",
@@ -223,17 +235,19 @@ gsea = function(cent.mat,topn) #eg 30 for 30%
   annot=annFUN.GO2genes,
   GO2genes=allGO2genes,
   geneSel=selection,
-  nodeSize=10)
-	results.ks <- runTest(GOdata, algorithm="weight01", statistic="ks")
+  nodeSize=20)
+	results.ks <- runTest(GOdata, statistic="KS")
 	goEnrichment <- GenTable(GOdata, KS=results.ks, orderBy="KS", topNodes=20)
 	goEnrichment$KS <- as.numeric(goEnrichment$KS)
 	goEnrichment <- goEnrichment[goEnrichment$KS<0.01,]
-	goEnrichment <- goEnrichment[goEnrichment$Annotated<200,]
+	goEnrichment <- goEnrichment[goEnrichment$Annotated<500,]
 	goEnrichment <- goEnrichment %>% arrange(goEnrichment$KS)
 	goEnrichment <- goEnrichment[,c("GO.ID","Term","KS")]
 	goEnrichment$Term <- gsub(" [a-z]*\\.\\.\\.$", "", goEnrichment$Term)
 	goEnrichment$Term <- gsub("\\.\\.\\.$", "", goEnrichment$Term)
 	goEnrichment$Term <- paste(goEnrichment$GO.ID, goEnrichment$Term, sep=", ")
-	goEnrichment$Term <- factor(goEnrichment$Term, levels=rev(goEnrichment$Term))
-	return(goEnrichment[1:2,])
+	#goEnrichment$Term <- factor(goEnrichment$Term, levels=rev(goEnrichment$Term))
+	goEnrichment=goEnrichment[1:nGO,]
+	goEnrichment$celltype=tag
+	goEnrichment
 }

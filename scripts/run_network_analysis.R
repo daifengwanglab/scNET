@@ -1,12 +1,117 @@
 
 rm(list=ls())
 
-source('~/work/scNET/scripts/load_libraries.R')
-source('~/work/scNET/scripts/read_data.R')
-source('~/work/scNET/scripts/functions_for_network_analysis.R')
+#source('~/work/scNET-devel/scripts/load_libraries.R')
+#source('~/work/scNET-devel/scripts/read_data.R')
+source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
+source('~/work/scNET-devel/scripts/main.R')
 
 
-nedges=200000#no of edges to keep in the consensus
+result_dir="~/work/scNET-devel/results"
+
+celltypes=c("Ex1","Ex2","Ex3e","Ex4","Ex5b","Ex6a","Ex6b","Ex8","Ex9",
+"In1a","In1b","In1c","In3","In4a","In4b","In6a","In6b","In7","In8",
+"Mic","Oli")
+
+nedges=200000 #no of edges to keep in the consensus
+
+#clean dir
+rm(list=ls(pattern="*.scNET.out"))
+
+#network analysis
+for(i in 1:length(celltypes))
+{
+  tag=celltypes[i]
+  outname=paste(celltypes[i],"scNET.out",sep=".")
+  assign(outname, scNET(lapply(ls(pattern=celltypes[i]), get),celltypes[i],nedges))
+}
+
+#write data to disk
+for(i in 1:length(celltypes))
+{
+  m=paste(celltypes[i],".scNET.out",sep="")
+  tag=celltypes[i]
+  modules=get(m)$modules
+  modules$moduleID=paste(tag,modules$moduleID,sep="_")
+  name=paste(celltypes[i],"modules",sep="_")
+  assign(name,modules)
+  filename=paste(name,"genesets",sep=".")
+  write.table(get(name), file=paste(result_dir, filename, sep="/"), row.names=FALSE, col.names=FALSE, sep="\t", quote=F)
+  filename=paste(name,"genesets.bg",sep=".")
+  write.table(as.data.frame(unique(get(name)$gene)),file=paste(result_dir, filename, sep="/"),row.names=FALSE, col.names=FALSE, sep="\t", quote=F)
+  filename=paste(name,"genesets.desc",sep=".")
+  df=as.data.frame(unique(get(name)$moduleID))
+  colnames(df)=c("id")
+  df$name=df$id
+  write.table(df,file=paste(result_dir, filename, sep="/"),row.names=FALSE, col.names=FALSE, sep="\t", quote=F)
+}
+
+
+rm(df)
+df <- data.frame(GO.ID=as.Date(character()),
+                 Term=character(),
+                 KS=numeric(),
+                celltype=character(),
+                 stringsAsFactors=FALSE)
+
+for(i in 1:length(celltypes))
+{
+  m=paste(celltypes[i],".scNET.out",sep="")
+  tag=celltypes[i]
+  pr=get(m)$degree
+  gs.df=gsea(pr,2,celltypes[i])
+  df=rbind(df,gs.df)
+}
+
+df.all=df
+#Then run again with threshold.
+
+
+GOBP.degree=df.all %>% filter (Term %in% df$Term)
+tmp=acast(GOBP.degree, Term~celltype, value.var="KS" )
+tmp[is.na(tmp)]=0
+GOBP.degree=tmp
+
+
+GOBP.pr=df.all %>% filter (Term %in% df$Term)
+tmp=acast(GOBP.pr, Term~celltype, value.var="KS" )
+tmp[is.na(tmp)]=0
+GOBP.pr=tmp
+
+ggplot(GOBP.pr,mapping=aes(x=celltype, y=Term, fill=-log(KS))) + geom_tile()
+
+
+
+library(reshape2)
+library(tidyr)
+
+dat=read.table("module_overlap.tbl")
+colnames(dat)=c("x","y","z")
+
+tmp=acast(dat, x~y, value.var="z")
+tmp[is.na(tmp)]=0
+annotation1=as.data.frame(colnames(tmp))
+annotation2=as.data.frame(rownames(tmp))
+ colnames(annotation1)=c("module")
+ colnames(annotation2)=c("module")
+annotation=rbind(annotation1,annotation2)
+list=unique(annotation$module)
+annotation=as.data.frame(list)
+annotation$celltype=annotation$list
+annotation=separate(annotation, celltype, into=c("a","b"))[,1:2]
+colnames(annotation)=c("module","celltype")
+
+pheatmap(mat.new,cellwidth=2,cellheight=2,show_rownames=FALSE,show_colnames=FALSE,filename=NA)
+
+
+
+#x
+ex.target.graph=get_target_graph(ex.consensus,0.5)
+ex.igraph.cluster=cluster_fast_greedy(ex.target.graph)
+ex.modularity=modularity(ex.target.graph, membership(ex.igraph.cluster))
+ex.density=edge_density(ex.target.graph)
+
+
 
 #create a list of networks for each cell type
 #Celltype1:

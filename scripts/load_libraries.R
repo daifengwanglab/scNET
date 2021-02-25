@@ -1,24 +1,14 @@
 
 # needs brush up
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
 
-packages = c("dplyr", "tidyr",
-             "igraph", "Loregic",
-             "reshape2","WGCNA",
-             "flashClust","arsenal",
-             "piano")
+list.of.packages <- c("dplyr", "tidyr",
+"igraph", "Loregic",
+"reshape2","WGCNA",
+"flashClust","arsenal",
+"piano","topGO","org.Hs.eg.db")
 
-package.check <- lapply(
-  packages,
-  FUN = function(x) {
-    if (!require(x, character.only = TRUE)) {
-      install.packages(x, dependencies = TRUE)
-      library(x, character.only = TRUE)
-    }
-  }
-)
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) BiocManager::install(new.packages)
 
-require(topGO)
-require(org.Hs.eg.db)
+lapply(list.of.packages, require, character.only = TRUE)

@@ -32,3 +32,4 @@ my_entrez_gene_info  <- getBM(attributes=my_attribute,
 
 
 my_entrez_gene_info=my_entrez_gene_info[,1:2]
+write.table(my_entrez_gene_info, file="hgncSymbols_to_entrez.human.txt",sep="\t",quote=FALSE,row.names=FALSE, col.names=TRUE )

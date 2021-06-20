@@ -100,7 +100,7 @@ get_centrality=function(net, type, tag)
 	}
 	else if (type=="betweenness")
 	{
-		cent=betweenness(net.igraph)
+		cent=betweenness(net.igraph, directed=TRUE)
 		cent=as.data.frame(cent)
 		colnames(cent)=c("scores")
 		cent=cent[order(-cent$scores), , drop = FALSE]
@@ -120,9 +120,19 @@ get_centrality=function(net, type, tag)
 		rownames(cent)=c()
 		return(cent)
 	}
-	else if (type=="degree")
+	else if (type=="degree_in")
 	{
-		cent=	as.data.frame(igraph::degree(net.igraph))
+		cent=	as.data.frame(igraph::degree(net.igraph,mode="in"))
+		colnames(cent)=c("scores")
+		cent=cent[order(-cent$scores), , drop = FALSE]
+		colnames(cent)=paste(tag,type,sep=".")
+		cent$gene=rownames(cent)
+		rownames(cent)=c()
+		return(cent)
+	}
+	else if (type=="degree_out")
+	{
+		cent=	as.data.frame(igraph::degree(net.igraph,mode="out"))
 		colnames(cent)=c("scores")
 		cent=cent[order(-cent$scores), , drop = FALSE]
 		colnames(cent)=paste(tag,type,sep=".")
@@ -174,7 +184,8 @@ find_target_pairs_matrix=function(net,th) #network and JI threshold
 	diag(jacc)=1 #required for TOMsimilarity
 	jacc
 }
-get_target_graph=function(net,th) #network and JI threshold
+
+get_coregnet_graph=function(net,th,tag) #network, JI threshold, tag
 {
 	colnames(net)=c("TF","target","score")
 	m=acast(net, TF~target, value.var="score")
@@ -194,6 +205,14 @@ get_target_graph=function(net,th) #network and JI threshold
 	target_pairs.igraph
 }
 
+calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
+{
+	sub=induced.subgraph(net,vids=geneset)
+	density=edge_density(sub)
+	density
+}
+
+
 detect_modules = function(matrix)
 {
 	#ref: https://support.bioconductor.org/p/102857/
@@ -211,43 +230,93 @@ detect_modules = function(matrix)
 	modules
 }
 
-gsea = function(cent.mat,nGO,tag) #eg 30 for 30%
+gsea = function(inputdf,tag)
 {
-	colnames(cent.mat)= c("score", "gene")
-	cent.mat$gene=gsub(" ","",cent.mat$gene)
-#	universe=cent.mat$gene
-	print(paste("universe:",length(universe),sep=" "))
-#	n=round(dim(cent.mat)[1]*(topn/100))
-#	cent.mat=top_n(cent.mat, n, wt=score)
-#	if(dim(cent.mat)[1]>1500)
-#	{
-#		cent.mat=cent.mat[cent.mat$score > 0,]
-#	}
-	genes=cent.mat$score
-	names(genes)=cent.mat$gene
-	names(genes)=gsub(" ","",names(genes))
-	selection <- function(allScore){ return(allScore > 0)} # function that returns TRUE/FALSE for p-values<0.05
-	selection <- function(x) TRUE
-	allGO2genes <- annFUN.org(whichOnto="BP", feasibleGenes=NULL, mapping="org.Hs.eg.db", ID="symbol")
-	GOdata <- new("topGOdata",
-  ontology="BP",
-  allGenes=genes,
-  annot=annFUN.GO2genes,
-  GO2genes=allGO2genes,
-  geneSel=selection,
-  nodeSize=20)
-	results.ks <- runTest(GOdata, statistic="KS")
-	goEnrichment <- GenTable(GOdata, KS=results.ks, orderBy="KS", topNodes=20)
-	goEnrichment$KS <- as.numeric(goEnrichment$KS)
-	goEnrichment <- goEnrichment[goEnrichment$KS<0.01,]
-	goEnrichment <- goEnrichment[goEnrichment$Annotated<500,]
-	goEnrichment <- goEnrichment %>% arrange(goEnrichment$KS)
-	goEnrichment <- goEnrichment[,c("GO.ID","Term","KS")]
-	goEnrichment$Term <- gsub(" [a-z]*\\.\\.\\.$", "", goEnrichment$Term)
-	goEnrichment$Term <- gsub("\\.\\.\\.$", "", goEnrichment$Term)
-	goEnrichment$Term <- paste(goEnrichment$GO.ID, goEnrichment$Term, sep=", ")
-	#goEnrichment$Term <- factor(goEnrichment$Term, levels=rev(goEnrichment$Term))
-	goEnrichment=goEnrichment[1:nGO,]
-	goEnrichment$celltype=tag
-	goEnrichment
+tag=colnames(df)[2]
+colnames(inputdf)= c("gene", "score")
+inputdf=na.omit(inputdf)
+genes=inputdf$score
+names(genes)=inputdf$gene
+selection <- function(allScore){ return(allScore > 0)}
+allGO2genes <- annFUN.org(whichOnto="BP", feasibleGenes=NULL, mapping="org.Hs.eg.db", ID="symbol")
+GOdata <- new("topGOdata",
+ontology="BP",
+allGenes=genes,
+annot=annFUN.GO2genes,
+GO2genes=allGO2genes,
+geneSel=selection,
+nodeSize=10)
+results.ks <- runTest(GOdata, statistic="KS",algorithm="weight01")
+goEnrichment <- GenTable(GOdata, KS=results.ks, orderBy="KS", topNodes=20)
+goEnrichment$KS <- as.numeric(goEnrichment$KS)
+goEnrichment <- goEnrichment[goEnrichment$KS<0.01,]
+goEnrichment <- goEnrichment[goEnrichment$Annotated<200,]
+goEnrichment <- goEnrichment %>% arrange(goEnrichment$KS)
+goEnrichment <-goEnrichment[1:5,]
+goEnrichment <- goEnrichment[,c("GO.ID","Term","KS")]
+goEnrichment$Term <- gsub(" [a-z]*\\.\\.\\.$", "", goEnrichment$Term)
+#goEnrichment$Term <- gsub("\\.\\.\\.$", "", goEnrichment$Term)
+goEnrichment$Term <- paste(goEnrichment$GO.ID, goEnrichment$Term, sep=", ")
+goEnrichment$celltype=tag
+goEnrichment
+}
+
+TopDOgsea = function(df,n,my_entrez_gene_info) #eg n=0.1 for top 10%
+{
+tag=colnames(df)[2]
+colnames(df)=c("gene","score")
+df=df[order(-df$score), , drop = FALSE]
+topn=round(dim(df)[1]*n)
+df=df[1:topn,]
+df=df[df$score > 0 ,]
+indx=match(df$gene,my_entrez_gene_info$gene)
+indx=indx[!is.na(indx)]
+df=my_entrez_gene_info[indx,]
+query=df$entrezID
+x <- enrichDO(gene          = query,
+              ont           = "DO",
+              pvalueCutoff  = 0.1,
+              pAdjustMethod = "BH",
+              minGSSize     = 5,
+              maxGSSize     = 500,
+              qvalueCutoff  = 0.1,
+              readable      = TRUE)
+DO.df=head(x)
+
+	if(nrow(DO.df)>0)
+	{
+		DO.df$ct=tag
+		DO.df$qvalue=-1*log10(DO.df$qvalue)
+		DO.df=DO.df[,c("Description","qvalue","ct")]
+		return(DO.df)
+	}
+}
+
+TopKEGGgsea = function(cent.mat,n,my_entrez_gene_info) #eg n=0.3 for 30%
+{
+	tag=colnames(df)[2]
+	colnames(df)=c("gene","score")
+	df=df[order(-df$score), , drop = FALSE]
+	topn=round(dim(df)[1]*n)
+	df=df[1:topn,]
+	df=df[df$score > 0 ,]
+	indx=match(df$gene,my_entrez_gene_info$gene)
+	indx=indx[!is.na(indx)]
+	df=my_entrez_gene_info[indx,]
+	gene=df$entrezID
+	x <- enrichKEGG(gene          = gene,
+              organism     = 'hsa',
+							keyType = "kegg",
+              pvalueCutoff = 0.05,
+							pAdjustMethod = "BH",
+							minGSSize = 10,
+  						maxGSSize = 500)
+	KEGG.df=head(x)
+	if(nrow(KEGG.df)>0)
+	{
+		KEGG.df$ct=tag
+		KEGG.df$qvalue=-1*log10(KEGG.df$qvalue)
+		KEGG.df=KEGG.df[,c("Description","qvalue","ct")]
+		return(KEGG.df)
+		}
 }

@@ -1,6 +1,15 @@
 
 # needs brush up
 
+library(pheatmap)
+library(RColorBrewer)
+library(viridis)
+library(clusterProfiler)
+library(DOSE)
+#library(ComplexHeatmap)
+library("data.table")
+library(ggplot2)
+library(hypeR)
 
 list.of.packages <- c("dplyr", "tidyr",
 "igraph", "Loregic",

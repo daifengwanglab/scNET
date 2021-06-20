@@ -1,8 +1,8 @@
 
 rm(list=ls())
 
-#source('~/work/scNET-devel/scripts/load_libraries.R')
-#source('~/work/scNET-devel/scripts/read_data.R')
+source('~/work/scNET-devel/scripts/load_libraries.R')
+source('~/work/scNET-devel/scripts/read_data.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 source('~/work/scNET-devel/scripts/main.R')
 
@@ -13,7 +13,6 @@ celltypes=c("Ex1","Ex2","Ex3e","Ex4","Ex5b","Ex6a","Ex6b","Ex8","Ex9",
 "In1a","In1b","In1c","In3","In4a","In4b","In6a","In6b","In7","In8",
 "Mic","Oli")
 
-nedges=200000 #no of edges to keep in the consensus
 
 #clean dir
 rm(list=ls(pattern="*.scNET.out"))
@@ -84,6 +83,7 @@ ggplot(GOBP.pr,mapping=aes(x=celltype, y=Term, fill=-log(KS))) + geom_tile()
 
 library(reshape2)
 library(tidyr)
+library(pheatmap)
 
 dat=read.table("module_overlap.tbl")
 colnames(dat)=c("x","y","z")
@@ -102,6 +102,32 @@ annotation=separate(annotation, celltype, into=c("a","b"))[,1:2]
 colnames(annotation)=c("module","celltype")
 
 pheatmap(mat.new,cellwidth=2,cellheight=2,show_rownames=FALSE,show_colnames=FALSE,filename=NA)
+
+
+
+#loregic
+#load ge matrix
+
+for(i in 1:length(celltypes))
+{
+  tmp=as.data.frame(gexpr) %>% dplyr::select(starts_with(celltypes[i]))
+  filename=paste(celltypes[i],"gexpr.avg",sep=".")
+  data=as.data.frame(rowSums(tmp)/dim(tmp)[2])
+  colnames(data)=celltypes[i]
+  assign(filename, data)
+}
+gexpr.avg=bind_cols(Ex1.gexpr.avg,Ex2.gexpr.avg,Ex3e.gexpr.avg,Ex4.gexpr.avg,
+Ex5b.gexpr.avg,Ex6a.gexpr.avg,Ex6b.gexpr.avg,Ex8.gexpr.avg,
+Ex9.gexpr.avg,In1a.gexpr.avg,In1b.gexpr.avg,In1c.gexpr.avg,
+In3.gexpr.avg,In4a.gexpr.avg,In4b.gexpr.avg,In6a.gexpr.avg,
+In6b.gexpr.avg,In7.gexpr.avg,In8.gexpr.avg,Mic.gexpr.avg,
+Oli.gexpr.avg)
+
+gexpr.avg.bin=binarize.array(gexpr.avg)
+
+gexpr.avg.scaled=scale(gexpr.avg)
+gexpr.avg.scaled.bin=binarize.array(gexpr.avg.scaled)
+source('scripts/run_loregic.R')
 
 
 

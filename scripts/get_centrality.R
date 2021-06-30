@@ -32,7 +32,7 @@ for (k in 1:length(centralities))
     TF.net=net[,c("TF","TG","mse")]
     TF.net=distinct(TF.net)
     assign(name, get_centrality(TF.net,c,tag))
-    }
+  }
 }
 
 rm(list=nets)
@@ -42,13 +42,12 @@ for(i in 1:length(celltypes))
   tag=celltypes[i]
   pattern=paste(tag,"\\.",sep="")
   list=ls(pattern=pattern)
-  data <- Reduce(function(x, y) merge(x, y, all=T), lapply(list,get), accumulate=F)
+  data = Reduce(function(x, y) merge(x, y, all=T), lapply(list,get), accumulate=F)
   #tmp=merge(get(list[1]),get(list[2]))
   #tmp=merge(tmp,get(list[3]))
   name=paste(tag,"centrality_matrix",sep=".")
   assign(name,data)
 }
-
 
 
 pattern="*.centrality_matrix"
@@ -60,7 +59,7 @@ for (i in 2:length(list))
   old=merge(old, get(list[i]), by="gene", all=TRUE)
 }
 
-write.table(old, file="centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
+#write.table(old, file="centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
 
 ###plotting
 
@@ -103,22 +102,33 @@ colz = list(TF = vip_colors)
 
 #pdf(file="centrality.heatmap.pdf")
 
-#p=Heatmap(cent.mat.scaled, col=col_fun, column_dend_reorder = FALSE,
-#column_split = rep(c("betweenness","in degree","out degree"), 8),
-#  column_gap = unit(5, "mm"),border = TRUE,row_names_gp = gpar(fontsize = 5),name="centrality score") +
-#  rowAnnotation(isTF = TF.df$TF, isMarker=markers.df$marker)
+p=Heatmap(cent.mat.scaled, col=col_fun, column_dend_reorder = FALSE,
+column_split = rep(c("betweenness","in degree","out degree"), 8),
+  column_gap = unit(5, "mm"),border = TRUE,row_names_gp = gpar(fontsize = 5),name="centrality score") +
+  rowAnnotation(isTF = TF.df$TF, isMarker=markers.df$marker,hei = anno_density(as.matrix(mic.ad), type = "heatmap", width = unit(6, "cm")))
 
 #draw(p)
 #dev.off()
 
 
-#calculate fold change in centrality measures
+#calculate fold change in centrality
+
 cent.mat=old
 rownames(cent.mat)=cent.mat$gene
 cent.mat$gene=NULL
 cent.mat[is.na(cent.mat)]=0
 cent.mat.scaled=apply(cent.mat, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X)))
 
+
+#enrichment analysis
+
+data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+genesets=data$genesets
+names(genesets)=data$geneset.descriptions
+
+
+diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
+"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL )
 
 for(i in 1:length(celltypes))
 {
@@ -132,18 +142,45 @@ for(i in 1:length(celltypes))
   d = transform(df, lfc = log2(df[,colnames(df)%like% "AD"]/ df[,colnames(df)%like% "Ctrl"]))
   d$lfc=abs(d$lfc)
   d=d[order(-d$lfc),]
-  signature=rownames(d[d$lfc>0,])
-  bkgrnd=rownames(d)
-#  genesets= msigdb_gsets("Homo sapiens", "C2", "CP:KEGG")
-  genesets=msigdb_gsets("Homo sapiens", "H", "")
-  hyp_obj = hypeR(signature, genesets, background=rownames(d),fdr=0.1)
-  name=paste(tag,"degreeIn.Kegg.hyperGeo",sep=".")
-  assign(name, hyp_obj)
-  colnames(d)=tag
+#  colnames(d)=tag
   name=paste(tag,"degreeIn.df",sep=".")
   assign(name,d)
+  signature=rownames(d[d$lfc>0,])
+  bkgrnd=rownames(d)
+  genesets= msigdb_gsets("Homo sapiens", "C2", "CP:KEGG")
+  #genesets=msigdb_gsets("Homo sapiens", "H", "")
+  hyp_obj = hypeR(signature, genesets, background=rownames(d),fdr=0.1)
+  hyp_df =  hyp_obj$data
+  name=paste(tag,"degreeIn.GO.hyperGeo",sep=".")
+  assign(name, hyp_obj)
+  if(nrow(hyp_df) > 0)
+  {
+    hyp_df$cell = tag
+    diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
+  }
 }
 
+data=diff.cent.enrich.tbl
+data$label=gsub("_"," ",data$label)
+p=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size=-log10(fdr))) + theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))
+#pdf(file="Diff.centrality.kegg.enrichment.pdf")
+#p
+#dev.off()
+
+
+#scatter plots
+pattern="*.degreeIn.df"
+list=ls(pattern=pattern)
+
+
+for(i in 1:length(list))
+{
+
+  tag=gsub(".degreeIn.df","",list[i])
+  p=plot_scatter(get(list[i]),tag,3)
+  name=paste(tag,"scatter.pdf",sep=".")
+  ggsave(name, p, device="pdf")
+}
 ### automate this
 #tmp=cbind(Ex.degreeIn.df,In.degreeIn.df)
 #tmp=cbind(tmp,Mic.degreeIn.df)

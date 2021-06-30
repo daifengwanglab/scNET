@@ -10,6 +10,10 @@ library(DOSE)
 library("data.table")
 library(ggplot2)
 library(hypeR)
+library(GSA)
+library(mGSZ)
+library(ggrepel)
+
 
 list.of.packages <- c("dplyr", "tidyr",
 "igraph", "Loregic",

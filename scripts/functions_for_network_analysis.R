@@ -320,3 +320,41 @@ TopKEGGgsea = function(cent.mat,n,my_entrez_gene_info) #eg n=0.3 for 30%
 		return(KEGG.df)
 		}
 }
+
+
+#https://stackoverflow.com/questions/15624656/label-points-in-geom-point
+plot_scatter=function(df,tag,th){
+
+d=df
+d$Name=rownames(d)
+d$lfc=log2(d[,1]/d[,2])
+p=ggplot(d, aes(x= AD, y = Ctrl, label = Name)) +
+geom_point(color = dplyr::case_when(d$lfc > th ~ "green",
+                                      d$lfc < -th ~ "red",
+                                      TRUE ~ "#7570b3"),
+             size = 3, alpha = 0.8) +
+  geom_text_repel(data          = subset(d, lfc > th),
+                  nudge_x       = 10 - subset(d, lfc > th)$lfc,
+                  size          = 2,
+                  box.padding   = 2.5,
+                  point.padding = 0.5,
+                  force         = 200,
+                  segment.size  = 0.2,
+                  segment.color = "grey50",
+                  direction     = "x") +
+  geom_label_repel(data         = subset(d, lfc < -th),
+                  nudge_x       = 10 - subset(d, lfc < -th)$lfc,
+                  size          = 2,
+                  box.padding   = 1,
+                  point.padding = 0.5,
+                  force         = 200,
+                  segment.size  = 0.2,
+                  segment.color = "grey50",
+                  direction     = "x") +
+  theme_classic(base_size = 16)
+
+#name=paste(tag,"scatter.pdf", sep=".")
+#pdf(file=name)
+p
+#dev.off()
+}

@@ -6,36 +6,56 @@ library(dplyr)
 library(ArrayBin)
 #library(tidyverse)
 
-load("data/gematrix/gexpr_All.rdata")
+load("~/work/scNET_manuscript/data/Ting_Jin/AD_MIT/MIT_imputed_gexpr.rdata")
 
-gexpr=t(gexpr)
+celltypes=c("Mic","Oli","Ex","In")
 
-#data=read.table(args[1], header=T, sep=",", stringsAsFactors=FALSE)
-data=read.table("data/scGRN_openchrom_en/Mic_openchrom_en_GRN.csv", header=T, sep=",", stringsAsFactors=FALSE)
-data=data %>% arrange(-abs_coef)
-data=data[,c("TF","TG","abs_coef")]
-tmp= data %>% distinct()
-tmp=tmp[1:50000,]
-data=tmp[,1:2]
-nodes=append(unique(data$TF),unique(data$TG))
+allmat=gexpr_AD
+table(rownames(allmat)==allmat$TAG)
+rownames(allmat)=allmat$new.broad.cell.type
 
-ct.gexpr=dplyr::select(as.data.frame(gexpr),contains("Mic"))
-#ct.gexpr=dplyr::select(as.data.frame(gexpr),contains(args[2]))
-indx=match(nodes,rownames(ct.gexpr))
+
+for (i in 1:length(celltypes))
+{
+  tag=celltypes[i]
+  gexpr=allmat[rownames(allmat) %like% tag, ]
+  #gexpr = t(gexpr[,log10(colSums(gexpr)+1)> 1])
+  gexpr=t(gexpr)
+  variances = apply(X=gexpr, MARGIN=2, FUN=var)
+  sorted = sort(variances, decreasing=TRUE, index.return=TRUE)
+  sorted.indx=sorted$ix[1:100]
+  gexpr.highvariance =   gexpr[, sorted.indx]
+  name=paste(tag,"gexpr_highvar",sep=".")
+  assign(name,gexpr.highvariance)
+}
+
+mat1=merge(Mic.gexpr_highvar,Oli.gexpr_highvar,by="row.names")
+mat2=merge(Ex.gexpr_highvar,In.gexpr_highvar,by="row.names")
+mat=merge(mat1,mat2,by="Row.names")
+rownames(mat)=mat$Row.names
+mat$Row.names=NULL
+
+#################
+net=read.table(args[1], header=T, sep="\t", stringsAsFactors=FALSE)
+#data=read.table("data/scGRN_openchrom_en/Mic_openchrom_en_GRN.csv", header=T, sep=",", stringsAsFactors=FALSE)
+net=net[net$mse<0.1 & net$abs_coef > 0.01,]
+
+net=net %>% arrange(-abs_coef)
+net=net[,c("TF","TG","abs_coef")]
+net= net %>% distinct()
+net=net[,1:2]
+nodes=append(unique(net$TF),unique(net$TG))
+
+
+indx=match(nodes,rownames(mat))
 indx=indx[!is.na(indx)]
-nodes.ct.gexpr=ct.gexpr[indx,]
+nodes.ct.gexpr=mat[indx,]
 
-#calculate variances in each sample
-variances = apply(X=nodes.ct.gexpr, MARGIN=2, FUN=var)
-sorted = sort(variances, decreasing=TRUE, index.return=TRUE)
-sorted.indx=sorted$ix[1:10]
-gexpr.highvariance = nodes.ct.gexpr[, sorted.indx]
-print(dim(gexpr.highvariance))
-
-nodes.ct.gexpr.bin=binarize.array(gexpr.highvariance)
-ct.loregic.out=loregic(data,nodes.ct.gexpr.bin)
+nodes.ct.gexpr.bin=binarize.array(nodes.ct.gexpr)
+ct.loregic.out=loregic(net,nodes.ct.gexpr.bin)
 
 filename=paste(args[2],"loregic.out",sep=".")
-write.table(ct.loregic.out,file=paste("results",filename,sep="/"), col.names=TRUE, row.names=FALSE, sep="\t", quote=F)
+write.table(ct.loregic.out,file=filename, col.names=TRUE, row.names=FALSE, sep="\t", quote=F)
+
 filename=paste(args[2],"gexpr.bin.mat",sep=".")
-write.table(data.frame("Gene"=rownames(nodes.ct.gexpr.bin),nodes.ct.gexpr),file=paste("results",filename,sep="/"), row.names=FALSE,quote=F, sep="\t")
+write.table(data.frame("Gene"=rownames(nodes.ct.gexpr.bin),nodes.ct.gexpr.bin),file=paste("results",filename,sep="/"), row.names=FALSE,quote=F, sep="\t")

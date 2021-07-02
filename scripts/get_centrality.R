@@ -14,6 +14,8 @@ colnames(my_entrez_gene_info)=c("entrezID","gene")
 
 celltypes=c("Mic","Oli","Ex","In")
 
+###############################################
+#calculate centralities
 centralities=c("betweenness","degree_out","degree_in")
 
 for (k in 1:length(centralities))
@@ -49,7 +51,6 @@ for(i in 1:length(celltypes))
   assign(name,data)
 }
 
-
 pattern="*.centrality_matrix"
 list=ls(pattern=pattern)
 
@@ -59,10 +60,9 @@ for (i in 2:length(list))
   old=merge(old, get(list[i]), by="gene", all=TRUE)
 }
 
-#write.table(old, file="centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
+write.table(old, file="centralities/centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
 
-###plotting
-
+###plotting centralities
 cent.mat=old
 rownames(cent.mat)=cent.mat$gene
 cent.mat$gene=NULL
@@ -75,8 +75,16 @@ colnames(cent.mat.scaled)=gsub(".betweenness","",gsub(".degree_out","",gsub(".de
 TF.df=as.data.frame(rownames(cent.mat.scaled))
 colnames(TF.df)=c("Gene")
 #use real TF list
-TF.df$TF=ifelse(TF.df$Gene %in% TF.net$TF, "Yes","No")
-#row_ha = rowAnnotation(isTF = TF.df$TF,col = list(bar = c("Yes" = "red", "No" = "green", "c" = "blue")) )
+TF.df$TF=ifelse(TF.df$Gene %in% TF.net$TF, "TF","Target")
+
+#for heirarchy
+data.hei=read.table("~/work/scNET_manuscript/AD_MIT/heirarchy/all_genes_heirarchy_levs.txt", header=T)
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev1", "Bottom", y)))
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev6", "Top", y)))
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev2", "Middle", y)))
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev3", "Middle", y)))
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev4", "Middle", y)))
+data.hei=as.data.frame(lapply(data.hei, function(y) gsub("Lev5", "Middle", y)))
 
 
 markers=read.table("~/work/scNET_manuscript/data/marker_genes.txt", header=T)
@@ -90,43 +98,48 @@ markers.df$marker=ifelse(markers.df$Gene %in% markers$Gene, "Yes","No")
 
 library(circlize)
 
-col_fun = colorRamp2(c(0, 1), c("white", "red"))
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+troncolors=pal_tron("legacy", alpha = 1)(7)
 
-#NOT WORKING
-#https://github.com/jokergoo/ComplexHeatmap/issues/148
-vip_colors = c("red","blue")
-nr_TF=sort(unique(TF.df$TF))
-names(vip_colors) = nr_TF
-colz = list(TF = vip_colors)
+col_fun = c(troncolors[5], npgcolors[8])
 
-
-#pdf(file="centrality.heatmap.pdf")
-
-p=Heatmap(cent.mat.scaled, col=col_fun, column_dend_reorder = FALSE,
+colnames(cent.mat.scaled)=gsub(".betweenness","",gsub(".degree_out","",gsub(".degree_in","",colnames(cent.mat.scaled))))
+p.heatmap=Heatmap(cent.mat.scaled, col=col_fun, column_dend_reorder = FALSE,show_row_dend=FALSE,
 column_split = rep(c("betweenness","in degree","out degree"), 8),
   column_gap = unit(5, "mm"),border = TRUE,row_names_gp = gpar(fontsize = 5),name="centrality score") +
-  rowAnnotation(isTF = TF.df$TF, isMarker=markers.df$marker,hei = anno_density(as.matrix(mic.ad), type = "heatmap", width = unit(6, "cm")))
+  rowAnnotation(isTF = TF.df$TF,foo = anno_empty(border = FALSE),
+  hei.Ex=data.hei$Ex.AD,
+  hei.In=data.hei$In.AD,
+  hei.Oli=data.hei$Oli.AD,
+  hei.Mic=data.hei$Mic.AD,
+  width = unit(6, "cm"),border = TRUE,
+  col = list(isTF = c("TF" = npgcolors[2], "Target" = npgcolors[4]),
+        hei.Ex=c("Bottom"=npgcolors[3],"Top"=npgcolors[4],"Middle"=npgcolors[5],"None"="white"),
+        hei.In=c("Bottom"=npgcolors[3],"Top"=npgcolors[4],"Middle"=npgcolors[5],"None"="white"),
+        hei.Oli=c("Bottom"=npgcolors[3],"Top"=npgcolors[4],"Middle"=npgcolors[5],"None"="white"),
+        hei.Mic=c("Bottom"=npgcolors[3],"Top"=npgcolors[4],"Middle"=npgcolors[5],"None"="white")
+    )
+  )
+p.heatmap
 
-#draw(p)
-#dev.off()
 
+pdf(file="Figures/centrality_heatmap.pdf")
+draw(p.heatmap, heatmap_legend_side = "left", annotation_legend_side = "bottom")
+dev.off()
+
+##########################################################
 
 #calculate fold change in centrality
-
 cent.mat=old
 rownames(cent.mat)=cent.mat$gene
 cent.mat$gene=NULL
 cent.mat[is.na(cent.mat)]=0
 cent.mat.scaled=apply(cent.mat, MARGIN = 2, FUN = function(X) (X - min(X))/diff(range(X)))
 
-
-#enrichment analysis
-
+#GO enrichment analysis
 data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
 genesets=data$genesets
 names(genesets)=data$geneset.descriptions
-
-
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL )
 
@@ -142,14 +155,13 @@ for(i in 1:length(celltypes))
   d = transform(df, lfc = log2(df[,colnames(df)%like% "AD"]/ df[,colnames(df)%like% "Ctrl"]))
   d$lfc=abs(d$lfc)
   d=d[order(-d$lfc),]
-#  colnames(d)=tag
   name=paste(tag,"degreeIn.df",sep=".")
   assign(name,d)
   signature=rownames(d[d$lfc>0,])
   bkgrnd=rownames(d)
-  genesets= msigdb_gsets("Homo sapiens", "C2", "CP:KEGG")
-  #genesets=msigdb_gsets("Homo sapiens", "H", "")
-  hyp_obj = hypeR(signature, genesets, background=rownames(d),fdr=0.1)
+  #genesets= msigdb_gsets("Homo sapiens", "C2", "CP:G")
+  genesets=genesets
+  hyp_obj = hypeR(signature, genesets, background=rownames(d),fdr=0.01)
   hyp_df =  hyp_obj$data
   name=paste(tag,"degreeIn.GO.hyperGeo",sep=".")
   assign(name, hyp_obj)
@@ -162,23 +174,22 @@ for(i in 1:length(celltypes))
 
 data=diff.cent.enrich.tbl
 data$label=gsub("_"," ",data$label)
-p=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size=-log10(fdr))) + theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))
-#pdf(file="Diff.centrality.kegg.enrichment.pdf")
-#p
-#dev.off()
+p.dots=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size=-log10(fdr))) + theme_classic()
+pdf(file="Figures/Diff.centrality.GO.enrichment.pdf")
+p.dots
+dev.off()
 
 
 #scatter plots
 pattern="*.degreeIn.df"
 list=ls(pattern=pattern)
 
-
 for(i in 1:length(list))
 {
-
   tag=gsub(".degreeIn.df","",list[i])
-  p=plot_scatter(get(list[i]),tag,3)
+  p=plot_scatter(get(list[i]),tag,2)
   name=paste(tag,"scatter.pdf",sep=".")
+  name=paste("Figures",name,sep="/")
   ggsave(name, p, device="pdf")
 }
 ### automate this

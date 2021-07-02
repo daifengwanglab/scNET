@@ -6,13 +6,14 @@ library(RColorBrewer)
 library(viridis)
 library(clusterProfiler)
 library(DOSE)
-#library(ComplexHeatmap)
+library(ComplexHeatmap)
 library("data.table")
 library(ggplot2)
 library(hypeR)
 library(GSA)
 library(mGSZ)
 library(ggrepel)
+library(ggsci)
 
 
 list.of.packages <- c("dplyr", "tidyr",

@@ -11,6 +11,7 @@ source('~/work/scNET-devel/scripts/read_data.R')
 
 #step2
 #source('~/work/scNET-devel/scripts/get_centrality.R')
+#heirarchy
 
 #step3
 #source('~/work/scNET-devel/scripts/get_GOBP_gsea.R')

@@ -1,11 +1,7 @@
 rm(list=ls())
 #heirarchy
-library(data.table)
-library(caret)
-library(easyalluvial)
-library('alluvial')
-library(ggsankey)
-library(dplyr)
+
+source('~/work/scNET-devel/scripts/load_libraries.R')
 
 celltypes=c("MIC","Oli","Ex","In")
 
@@ -40,10 +36,6 @@ p.mic=ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node,
   theme(legend.position = "none",
         plot.title = element_text(hjust = .5))
 
-#p.mic=easyalluvial::alluvial_wide( Mic, id = Gene, fill_by = 'first_variable')
-
-
-
 
 Oli.ad=read.table('heirarchy/AD_Oli.result.Lev6.txt', header=T)
 colnames(Oli.ad)=gsub("X","Lev",colnames(Oli.ad))
@@ -72,7 +64,6 @@ p.Oli=ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node,
   theme(legend.position = "none",
         plot.title = element_text(hjust = .5))
 
-#p.Oli=easyalluvial::alluvial_wide( Oli, id = Gene, fill_by = 'first_variable')
 
 Ex.ad=read.table('heirarchy/AD_Ex.result.Lev6.txt', header=T)
 colnames(Ex.ad)=gsub("X","Lev",colnames(Ex.ad))
@@ -101,7 +92,6 @@ p.Ex=ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, 
   theme(legend.position = "none",
         plot.title = element_text(hjust = .5))
 
-#p.Ex=easyalluvial::alluvial_wide( Ex, id = Gene, fill_by = 'first_variable')
 
 
 In.ad=read.table('heirarchy/AD_In.result.Lev6.txt', header=T)
@@ -131,7 +121,6 @@ p.In=ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, 
   theme(legend.position = "none",
         plot.title = element_text(hjust = .5))
 
-#p.In=easyalluvial::alluvial_wide( In, id = Gene, fill_by = 'first_variable')
 
 pdf(file="Figures/Hei.In.pdf")
 p.In
@@ -150,7 +139,7 @@ p.Oli
 dev.off()
 
 
-#combine all
+#combine all and find enrichment
 
 list=ls(pattern=".gene.lev")
 data = Reduce(function(x, y) merge(x, y, all=T), lapply(list,get), accumulate=F)
@@ -165,6 +154,74 @@ data = Reduce(function(x, y) merge(x, y, all=T), lapply(list,get), accumulate=F)
    theme(legend.position = "none",
          plot.title = element_text(hjust = .5))
 
-
 data[is.na(data)]="None"
 write.table(data, file="~/work/scNET_manuscript/AD_MIT/heirarchy/all_genes_heirarchy_levs.txt",sep="\t",row.names=F, col.names=T, quote=F)
+
+#enrichment
+Ex=data[data$Ex.AD!=data$Ex.Ctrl,]$Gene
+In=data[data$In.AD!=data$In.Ctrl,]$Gene
+Mic=data[data$Mic.AD!=data$Mic.Ctrl,]$Gene
+Oli=data[data$Oli.AD!=data$Oli.Ctrl,]$Gene
+
+#GO enrichment analysis
+GOdata=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+genesets=GOdata$genesets
+names(genesets)=GOdata$geneset.descriptions
+Ex.hyp = hypeR(Ex, genesets,fdr=0.05)$data
+Ex.hyp$cell="Ex"
+Mic.hyp = hypeR(Mic, genesets,fdr=0.05)$data
+Mic.hyp$cell="Mic"
+Oli.hyp = hypeR(Oli, genesets,fdr=0.05)$data
+Oli.hyp$cell="Oli"
+In.hyp = hypeR(In, genesets,fdr=0.05)$data
+In.hyp$cell="In"
+tbl=rbind(Ex.hyp,Mic.hyp,Oli.hyp,In.hyp)
+p.heir.GOenrich=ggplot(tbl, aes(y=label, x=cell)) + geom_point(aes(size=-log10(fdr))) +
+theme_minimal()
+
+
+#disease ontology enrichment
+res_enrich = disease_enrichment( entities =Ex, vocabulary = "HGNC", database = "ALL")
+Ex.table = res_enrich@qresult[res_enrich@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+Ex.table$cell="Ex"
+
+res_enrich = disease_enrichment( entities =In, vocabulary = "HGNC", database = "ALL")
+In.table = res_enrich@qresult[res_enrich@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+In.table$cell="In"
+
+res_enrich = disease_enrichment( entities =Mic, vocabulary = "HGNC", database = "ALL")
+Mic.table = res_enrich@qresult[res_enrich@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+Mic.table$cell="Mic"
+
+res_enrich = disease_enrichment( entities =Oli, vocabulary = "HGNC", database = "ALL")
+Oli.table = res_enrich@qresult[res_enrich@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+Oli.table$cell="Oli"
+
+DO.tbl=rbind(Ex.table,In.table,Mic.table,Oli.table)
+
+p.heir.DOenrich=ggplot(DO.tbl, aes(y=Description, x=cell)) + geom_point(aes(size=-log10(FDR))) +
+theme_minimal()
+
+
+Ex.data2 <- gene2disease(gene = Ex,score =c(0.2, 1),api_key=api)
+pdf(file="Figures/Ex.heir.diseaseclass.heatmap.pdf")
+plot(Ex.data2,class="DiseaseClass", nchars=30)
+dev.off()
+
+
+In.data2 <- gene2disease(gene = In,score =c(0.2, 1),api_key=api)
+pdf(file="Figures/In.heir.diseaseclass.heatmap.pdf")
+plot(In.data2,class="DiseaseClass", nchars=30)
+dev.off()
+
+
+Mic.data2 <- gene2disease(gene = Mic,score =c(0.2, 1),api_key=api)
+pdf(file="Figures/Mic.heir.diseaseclass.heatmap.pdf")
+plot(Mic.data2,class="DiseaseClass", nchars=30)
+dev.off()
+
+
+Oli.data2 <- gene2disease(gene = Oli,score =c(0.2, 1),api_key=api)
+pdf(file="Figures/Oli.heir.diseaseclass.heatmap.pdf")
+plot(Oli.data2,class="DiseaseClass", nchars=30)
+dev.off()

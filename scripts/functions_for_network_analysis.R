@@ -162,8 +162,9 @@ calculate_triplet_hubScores=function(loregicOut,hubtbl)
 	new
 }
 
-find_target_pairs_matrix=function(net,th) #network and JI threshold
+find_target_pairs_matrix=function(net) #network and JI threshold
 {
+	net$mse=-log10(net$mse)
 	colnames(net)=c("TF","target","score")
 	m=acast(net, TF~target, value.var="score")
 	m=t(m)
@@ -174,18 +175,10 @@ find_target_pairs_matrix=function(net,th) #network and JI threshold
 	s = diag(i12) %*% matrix(1, ncol = length(diag(i12)))
 	u12 = s + t(s) - i12
 	jacc= i12/u12
-	#genes_jaccard_dist.dat=melt(as.matrix(jacc))
-	#target_pairs=genes_jaccard_dist.dat[genes_jaccard_dist.dat[, ncol(genes_jaccard_dist.dat)]>th,]
-	#colnames(target_pairs)=c("gene1","gene2","Jaccard")
-	#target_pairs$Jaccard=1
-	#target_pairs
-	jacc[jacc < th] = 0
-	jacc[jacc >= th] = 1
-	diag(jacc)=1 #required for TOMsimilarity
 	jacc
 }
 
-get_coregnet_graph=function(net,th,tag) #network, JI threshold, tag
+get_coregnet_graph=function(net,th) #network, JI threshold, tag
 {
 	colnames(net)=c("TF","target","score")
 	m=acast(net, TF~target, value.var="score")
@@ -198,11 +191,12 @@ get_coregnet_graph=function(net,th,tag) #network, JI threshold, tag
 	u12 = s + t(s) - i12
 	jacc= i12/u12
 	genes_jaccard_dist.dat=melt(as.matrix(jacc))
-	target_pairs=genes_jaccard_dist.dat[genes_jaccard_dist.dat[, ncol(genes_jaccard_dist.dat)]>th,]
-	colnames(target_pairs)=c("gene1","gene2","Jaccard")
-	target_pairs.igraph=graph_from_data_frame(target_pairs, directed=FALSE)
-	target_pairs.igraph=simplify(target_pairs.igraph)
-	target_pairs.igraph
+	grt=graph_from_adjacency_matrix(jacc,"undirected", weighted=TRUE, diag=FALSE)
+	tg=as.data.frame(get.edgelist(grt))
+	tg$jaccard=E(grt)$weight
+	tg=tg[tg$jaccard > th,]
+	colnames(tg)=c("g1","g2","jaccard")
+	tg
 }
 
 calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
@@ -213,17 +207,29 @@ calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
 }
 
 
-detect_modules = function(matrix)
+detect_modules = function(matrix, tag)
 {
-	#ref: https://support.bioconductor.org/p/102857/
-	#ref:
-	TOM = TOMsimilarity(matrix,TOMType="unsigned");
-	dissTOM = 1-TOM
+ #ref: http://pklab.med.harvard.edu/scw2014/WGCNA.html	#ref:
+
+	dissMatrix = 1 - matrix
 	# Call the hierarchical clustering function
-	geneTree = flashClust(as.dist(dissTOM),method="average");
-	minModuleSize = 100;
+	geneTree = flashClust(as.dist(dissMatrix),method="average");
+	minModuleSize = 30;
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
+	dynamicColors = labels2colors(dynamicMods)
+
+	#name=paste(tag,"module_dendro.pdf", sep=".")
+	#name=paste("Figures/",name,sep="")
+#	print("pdf.....")
+	#pdf(paste(tag,"module_dendro.pdf", sep="."))
+	#plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = "Gene dendrogram and module colors")
+	#dev.off()
+
+	#restGenes= (dynamicColors != "grey")
+	#diag(dissMatrix) = NA
+	#TOMplot(dissMatrix, geneTree, as.character(dynamicColors))
+
 	modules=cbind(as.data.frame(dynamicMods),rownames(matrix))
 	modules=modules[,c(2,1)]
 	colnames(modules)=c("gene","moduleID")

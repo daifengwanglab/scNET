@@ -1,11 +1,16 @@
 #!/usr/bin/env Rscript
-args = commandArgs(trailingOnly=TRUE) #loregic_out_file binarized_gexprmat celltype (e.g: Ex1)
+args = commandArgs(trailingOnly=TRUE) #loregic_out_file binarized_gexprmat celltype(e.g: Ex1) state
 
-library(tidyverse)
+#args=c("Mic.AD.loregic.out","Mic.AD.gexpr.bin.mat","Ex.AD")
+library(tidyr)
 library(Loregic)
+library(dplyr)
 
 loregicOut=read.table(args[1], header=T, sep="\t")
-bin.mat=read.table(args[2], header=T, row.names=1, sep="\t")
+bin.mat=read.table(args[2], header=T, sep="\t")
+bin.mat=distinct(bin.mat)
+rownames(bin.mat)=bin.mat$Gene
+bin.mat$Gene=NULL
 
 tmp=loregicOut %>% unite(x, c(RF1,RF2,target), sep="_")
 rownames(tmp)=tmp$x
@@ -79,4 +84,8 @@ for (i in 1:ncol(DF))
   colnames(count)="Count"
   df=rbind(df,count)
 }
-write.table(df, file=paste(args[2],"gate_consistent_counts.txt",sep="."), sep="\t",col.names=TRUE, row.names=FALSE)
+
+statetag=paste(args[2],args[3],sep=".")
+filename=paste(statetag,"gate_consistent_counts.txt",sep=".")
+
+write.table(df, file=filename, sep="\t",col.names=TRUE, row.names=FALSE)

@@ -10,11 +10,12 @@ nets=ls(pattern="*\\.network")
 for(i in 1:length(nets))
   {
     name=nets[i]
-    tag=gsub("_openchrom_en_GRN.network","",name)
+    #tag=gsub("_openchrom_en_GRN.network","",name)
+    tag=gsub(".network","",name)
     net=as.data.frame(lapply(nets[i],get))
-    TF.net1=net[net$TFbs %in% "promoter", ]
-    TF.net2=net[net$TFbs %in% "both", ]
-    TF.net=rbind(TF.net1,TF.net2)
+    #TF.net1=net[net$TFbs %in% "promoter", ]
+    #TF.net2=net[net$TFbs %in% "both", ]
+    #TF.net=rbind(TF.net1,TF.net2)
     TF.net=net[,c("TF","TG","mse")]
     TF.net=distinct(TF.net)
     net.igraph=graph_from_data_frame(TF.net, directed = TRUE, vertices = NULL)
@@ -31,18 +32,6 @@ for(i in 1:length(nets))
     avgdeg=sum(deg)/length(deg)
     df=data.frame(celltype=tag, Score=avgdeg, Metric="Avg.Degree")
     AvgDeg.tbl=rbind(AvgDeg.tbl,df)
-
-    #randomize using a simple method; optimize later
-    #random_ed = c()
-    #random_tr = c()
-    #random_deg =c()
-    #for(j in 1:5)
-    #{
-      #random=TF.net
-      #random[] <- lapply(random, sample)
-    #  vl_random_net = sample_degseq(deg, method = "vl")
-    #  random_ed = c(random_ed, edge_density(vl_random_net))
-    #}
   }
 
 topology.tbl=rbind(EdgeDensity.tbl,Transitivity.tbl,AvgDeg.tbl)
@@ -54,18 +43,16 @@ topology.tbl$ct = ifelse(topology.tbl$celltype %like% "Ex","Ex",
                   ifelse(topology.tbl$celltype %like% "Mic","Mic", "Oli")))
 
 topology.tbl$celltype=gsub(".network","",topology.tbl$celltype)
-multifacet= ggplot(topology.tbl, aes(x=Score, y=factor(celltype)))+
-  geom_bar(stat="identity",width=.5,position = position_dodge(width = 0.1))+
-  facet_grid(ct ~ Metric, scales="free")+labs(x="Score",y="cells")
-pdf(file="topology.pdf")
-multifacet
-dev.off()
+
+
+p.topology=ggplot(topology.tbl, aes(x=Score, y=factor(celltype), fill=state))+
+  geom_bar(stat="identity",position = "dodge")+
+  scale_fill_npg() +
+  facet_grid(ct ~ Metric, scales="free")+labs(x="Score",y="state") +
+  theme_classic()+theme(text = element_text(size = 8),axis.text.x = element_text(angle = 90))
+
+
+#ggsave(p.topology,file="Figures/topology.pdf",width = 4, height = 3, dpi = 300, units = "in", device='tiff')
+
 
 write.table(topology.tbl, file="globalTopology.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
-
-#source('~/work/scNet-devel/scripts/disease_topology.R')
-#topology.tbl.subset=topology.tbl[topology.tbl$celltype %in% c("Ex1","In1a","Mic","Oli"),]
-#table=rbind(topology.tbl.subset,topology.AD.tbl)
-#multifacet=ggplot(table, aes(x=Score, y=celltype))+geom_bar(stat="identity")+facet_grid(state ~ Metric , scales="free")
-#healthy=ggplot(topology.tbl.subset, aes(x=Score, y=celltype))+geom_bar(stat="identity")+facet_grid(~ Metric, scales="free")
-#disease=ggplot(topology.AD.tbl, aes(x=Score, y=celltype))+geom_bar(stat="identity")+facet_grid(~ Metric, scales="free")

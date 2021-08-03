@@ -3,6 +3,9 @@ source('~/work/scNET-devel/scripts/load_libraries.R')
 source('~/work/scNET-devel/scripts/read_data.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
+#fig 2a in https://www.nature.com/articles/s12276-020-00528-0#Sec2
+#fig 1c in https://www.nature.com/articles/s41467-019-10591-5/figures/1
+
 nets=ls(pattern="*\\.network")
 for(i in 1:length(nets))
 {

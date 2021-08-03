@@ -3,10 +3,9 @@ rm(list=ls())
 home_dir=getwd()
 #network data directory; change accordingly
 
-scGRNom_data_dir=c("/Users/chiraggupta/work/scNET_manuscript/AD_MIT/data/LakeCtrl")
+#scGRNom_data_dir=c("/Users/chiraggupta/work/scNET_manuscript/AD_MIT/data/LakeCtrl")
 
-#scGRNom_data_dir=c("/Users/chiraggupta/work/scNET_manuscript/AD_MIT/data")
-#scGRNom_data_dir=c("~/work/scNET_manuscript/data/Ting_Jin/AD_networks/AD01103_GRN/")
+scGRNom_data_dir=c("/Users/chiraggupta/work/scNET_manuscript/AD_MIT/data")
 
 ##genes=c("LINGO1", "CNTNAP2","ERBB2IP","NEGR1","BEX1","NTNG1","SLC17A7")
 setwd(scGRNom_data_dir)

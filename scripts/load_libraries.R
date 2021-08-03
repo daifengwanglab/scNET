@@ -1,6 +1,9 @@
 
 # needs brush up
 
+
+
+
 library(pheatmap)
 library(RColorBrewer)
 library(viridis)
@@ -21,7 +24,12 @@ library(ggsankey)
 library(dplyr)
 library(wordcloud)
 library(disgenet2r)
+library(ggplot2)
+library(ComplexUpset)
+library(readxl)
 
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+troncolors=pal_tron("legacy", alpha = 1)(7)
 
 list.of.packages <- c("dplyr", "tidyr",
 "igraph", "Loregic",

@@ -1,5 +1,7 @@
 rm(list=ls())
 
+#
+
 #step0
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 source('~/work/scNET-devel/scripts/load_libraries.R')
@@ -14,18 +16,44 @@ out_dir="./Figures"
 
 #step2
 source('~/work/scNET-devel/scripts/get_centrality.R')
-pdf(file=paste(out_dir,"feature_heatmap.pdf",sep="/"))
-draw(p.heatmap, heatmap_legend_side = "left", annotation_legend_side = "bottom")
+source('~/work/scNET-devel/scripts/plot_upset_cent.R')
+pdf(file="Figures/betweenness.upset.pdf")
+p.bet
 dev.off()
-pdf(file=paste(out_dir,"Centrality.GOgsea.pdf",sep="/"))
-p.GOgsea
+pdf(file="Figures/indegree.upset.pdf")
+p.in
 dev.off()
-pdf(file=paste(out_dir,"Centrality.Kegg.pdf",sep="/"))
-p.Kegg
+pdf(file="Figures/outdegree.upset.pdf")
+p.out
 dev.off()
 
+source('~/work/scNET-devel/scripts/plot_centrality.R')
+
+
 #step3
-source('~/work/scNET-devel/scripts/get_heirarchy_scores.R')
+#get h metric and DE
+#get rewiring
+
+
+
+#step4
+source('~/work/scNET-devel/scripts/plot_heirarchy_scores.R')
+pdf(file="Figures/Hei.In.pdf")
+p.In
+dev.off()
+pdf(file="Figures/Hei.Ex.pdf")
+p.Ex
+dev.off()
+pdf(file="Figures/Hei.Mic.pdf")
+p.mic
+dev.off()
+pdf(file="Figures/Hei.Oli.pdf")
+p.Oli
+dev.off()
+pdf(file="Figures/Heir.lvl.GO.pdf")
+p.heir.lvlGO
+dev.off()
+
 
 #step4
 source('~/work/scNET-devel/scripts/find_coregnet.R')

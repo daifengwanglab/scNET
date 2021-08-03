@@ -1,17 +1,5 @@
 
 
-process_networks = function(list, celltypeTag, th)
-{
-	newList=list()
-	for (i in 1:length(list))
-	{
-		network=rank_network_edges(as.data.frame(list[i]),th,	celltypeTag)
-		colnames(network)=c("edge",paste("rank",i,sep="."))
-		name=paste("Network", i, sep = ".")
-		newList[[name]]=network
-	}
-	newList
-}
 
 rank_network_edges = function(net,th,tag) #network and threshold for # of edges to report
 {
@@ -267,35 +255,14 @@ goEnrichment$celltype=tag
 goEnrichment
 }
 
-TopDOgsea = function(df,n,my_entrez_gene_info) #eg n=0.1 for top 10%
+GetTopCentralGenes = function(df,n) #eg n=0.1 for top 10%
 {
-tag=colnames(df)[2]
-colnames(df)=c("gene","score")
-df=df[order(-df$score), , drop = FALSE]
-topn=round(dim(df)[1]*n)
-df=df[1:topn,]
-df=df[df$score > 0 ,]
-indx=match(df$gene,my_entrez_gene_info$gene)
-indx=indx[!is.na(indx)]
-df=my_entrez_gene_info[indx,]
-query=df$entrezID
-x <- enrichDO(gene          = query,
-              ont           = "DO",
-              pvalueCutoff  = 0.1,
-              pAdjustMethod = "BH",
-              minGSSize     = 5,
-              maxGSSize     = 500,
-              qvalueCutoff  = 0.1,
-              readable      = TRUE)
-DO.df=head(x)
-
-	if(nrow(DO.df)>0)
-	{
-		DO.df$ct=tag
-		DO.df$qvalue=-1*log10(DO.df$qvalue)
-		DO.df=DO.df[,c("Description","qvalue","ct")]
-		return(DO.df)
-	}
+	colnames(df)=c("gene","score")
+	df=df[order(-df$score), , drop = FALSE]
+	topn=round(dim(df)[1]*n)
+	df=df[1:topn,]
+	df=df[df$score > 0 ,]
+	df$gene
 }
 
 TopKEGGgsea = function(cent.mat,n,my_entrez_gene_info) #eg n=0.3 for 30%
@@ -338,12 +305,8 @@ p=ggplot(d, aes(x= AD, y = Ctrl, label = Name)) +
 geom_point(color = dplyr::case_when(d$lfc > th ~ npgcolors[3],
                                       d$lfc < -th ~ npgcolors[8],
                                       TRUE ~ "black"),
-             size = 3, alpha = 0.8) +#(use text repel if want gene names)
-
-  theme_classic(base_size = 16)
-
-#name=paste(tag,"scatter.pdf", sep=".")
-#pdf(file=name)
+             size = 3, alpha = 0.8) + ggtitle(expression(Delta ~ "Betweenness" ))+
+						 theme(text = element_text(size = 10)) +
+						 theme_bw(base_size=12)
 p
-#dev.off()
 }

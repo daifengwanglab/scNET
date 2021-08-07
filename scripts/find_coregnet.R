@@ -12,16 +12,20 @@ for(i in 1:length(nets))
   name=nets[i]
   celltype=gsub(".network","",name)
   net=as.data.frame(lapply(nets[i],get))
-  TF.net1=net[net$TFbs %in% "promoter", ]
-  TF.net2=net[net$TFbs %in% "both", ]
-  TF.net=rbind(TF.net1,TF.net2)
-  TF.net=net[,c("TF","TG","mse")]
-  TF.net=distinct(TF.net)
+  net=net[,c("TF","TG","abs_coef")]
+  net=distinct(net)
   name=paste(name,"JI.coreg.mat",sep=".")
-  assign(name, find_target_pairs_matrix(TF.net))
+  assign(name, find_target_pairs_matrix(net))
   mat=get(name)
   name=gsub(".mat",".modules", name)
-  assign(name, detect_modules(mat,"AD_Ex"))
+  assign(name, detect_modules(mat))
+  net.igraph=graph_from_data_frame(net, directed = FALSE, vertices = NULL)
+  for (j in 1:10)
+  {
+    net.rand=erdos.renyi.game(length(V(net.igraph)),length(E(net.igraph)), type="gnm",directed = FALSE)
+    net.rand.df=as.data.frame(get.edgelist(net.rand))
+    
+  }
 }
 
 
@@ -36,8 +40,6 @@ diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
 
 module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
-
-
 #genesets <- msigdb_gsets("Homo sapiens", "C2", "CP:KEGG", clean=TRUE)
 
 list=ls(pattern="*\\.modules")
@@ -45,16 +47,18 @@ for (i in 1:length(list))
 {
   total=0
   annotated=0
+  totalBP=0
   name=list[i]
   name=gsub(".network.JI.coreg.modules","",name)
   df=get(list[i])
   modnames=unique(factor(df$moduleID))
+#  universe=df$gene
   total=length(modnames)
   print(paste(name,length(modnames),sep=":"))
   for (j in 1:length(modnames))
   {
     mod.genes=df[df$moduleID %in% modnames[j],]$gene
-    hyp_obj = hypeR(mod.genes, genesets, ,fdr=0.01)
+    hyp_obj = hypeR(mod.genes, genesets,fdr=0.05)
     hyp_df =  hyp_obj$data
     if(nrow(hyp_df) > 0)
     {
@@ -67,6 +71,15 @@ for (i in 1:length(list))
     newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated)
   }
   module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
+}
+
+ct.totalBP=data.frame("cell"=NULL,"TotalBP"=NULL)
+list=unique(diff.cent.enrich.tbl$cell)
+for (i in 1:length(list))
+{
+  df=diff.cent.enrich.tbl[diff.cent.enrich.tbl$cell %in%  list[i],]
+  tmp.df=data.frame("cell"=list[i],"TotalBP"=length(unique(df$label)))
+  ct.totalBP=rbind(ct.totalBP,tmp.df)
 }
 
 ##########################################

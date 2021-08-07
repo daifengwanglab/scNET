@@ -152,7 +152,6 @@ calculate_triplet_hubScores=function(loregicOut,hubtbl)
 
 find_target_pairs_matrix=function(net) #network and JI threshold
 {
-	net$mse=-log10(net$mse)
 	colnames(net)=c("TF","target","score")
 	m=acast(net, TF~target, value.var="score")
 	m=t(m)
@@ -195,7 +194,7 @@ calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
 }
 
 
-detect_modules = function(matrix, tag)
+detect_modules = function(matrix)
 {
  #ref: http://pklab.med.harvard.edu/scw2014/WGCNA.html	#ref:
 

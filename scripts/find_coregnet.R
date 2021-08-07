@@ -6,6 +6,11 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #fig 2a in https://www.nature.com/articles/s12276-020-00528-0#Sec2
 #fig 1c in https://www.nature.com/articles/s41467-019-10591-5/figures/1
 
+#Read GO data
+data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+genesets=data$genesets
+names(genesets)=data$geneset.descriptions
+
 nets=ls(pattern="*\\.network")
 for(i in 1:length(nets))
 {
@@ -22,9 +27,9 @@ for(i in 1:length(nets))
   net.igraph=graph_from_data_frame(net, directed = FALSE, vertices = NULL)
   for (j in 1:10)
   {
-    net.rand=erdos.renyi.game(length(V(net.igraph)),length(E(net.igraph)), type="gnm",directed = FALSE)
-    net.rand.df=as.data.frame(get.edgelist(net.rand))
-    
+    #net.rand=erdos.renyi.game(length(V(net.igraph)),length(E(net.igraph)), type="gnm",directed = TRUE)
+    net.rand.df=as.data.table(net)[, lapply(.SD, sample)]
+
   }
 }
 
@@ -32,10 +37,6 @@ for(i in 1:length(nets))
 ##################
 ##enrichment analysis
 
-
-data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
-genesets=data$genesets
-names(genesets)=data$geneset.descriptions
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
 

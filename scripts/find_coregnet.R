@@ -26,20 +26,22 @@ for(i in 1:length(nets))
   name=paste(name,"JI.coreg.mat",sep=".")
   assign(name, find_target_pairs_matrix(net))
   mat=get(name)
+  mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
   name=gsub(".mat",".modules", name)
   assign(name, detect_modules(mat))
-  for (j in 1:nrandnets)
-  {
-    net.rand.df=net
-    net.rand.df$TF=sample(net.rand.df$TG)
-    name=paste(nets[i],"randomCoregNet",sep=".")
-    name=gsub(".network.JI.coreg.mat","",name)
-    name=paste(name, j,sep=".")
-    assign(name, find_target_pairs_matrix(net.rand.df))
-    mat=get(name)
-    name=paste(name,".modules", sep="")
-    assign(name, detect_modules(mat))
-  }
+  #for (j in 1:nrandnets)
+  #{
+  #  net.rand.df=net
+#    net.rand.df$TF=sample(net.rand.df$TG)
+#    name=paste(nets[i],"randomCoregNet",sep=".")
+#    name=gsub(".network.JI.coreg.mat","",name)
+#    name=paste(name, j,sep=".")
+#    assign(name, find_target_pairs_matrix(net.rand.df))
+#    mat=get(name)
+#    mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
+#    name=paste(name,".modules", sep="")
+#    assign(name, detect_modules(mat))
+#  }
 }
 
 
@@ -84,11 +86,11 @@ for (i in 1:length(list))
 }
 
 #split random and real into two dfs
-rand.module.enrich.tbl=module.enrich.tbl[module.enrich.tbl$cell %like% "randomCoregNet",]
-module.enrich.tbl=module.enrich.tbl[!module.enrich.tbl$cell %like% "randomCoregNet",]
+#rand.module.enrich.tbl=module.enrich.tbl[module.enrich.tbl$cell %like% "randomCoregNet",]
+#module.enrich.tbl=module.enrich.tbl[!module.enrich.tbl$cell %like% "randomCoregNet",]
 
-rand.diff.cent.enrich.tbl=diff.cent.enrich.tbl[diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
-diff.cent.enrich.tbl=diff.cent.enrich.tbl[!diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
+#rand.diff.cent.enrich.tbl=diff.cent.enrich.tbl[diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
+#diff.cent.enrich.tbl=diff.cent.enrich.tbl[!diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
 
 #count total BP per net
 ct.totalBP=data.frame("cell"=NULL,"TotalBP"=NULL)
@@ -148,7 +150,76 @@ u12 = s + t(s) - i12
 jacc= i12/u12
 jacc[jacc > 0.5] = 1
 diag(jacc)=0
-pheatmap(jacc, color=rev(inferno(10)), border=FALSE)
+
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+tmp=data.frame(cell=colnames(jacc))
+tmp$celltype=ifelse(tmp$cell %like% "Ex","Ex",ifelse(tmp$cell %like% "In","In",ifelse(tmp$cell %like% "Mic","Mic","Oli")))
+tmp$state=ifelse(tmp$cell %like% "AD","AD","Control")
+
+rowannot=rowAnnotation(Celltype=tmp$celltype,State=tmp$state,
+col = list(Celltype = c("In" = npgcolors[1], "Ex" = npgcolors[2], "Mic"=npgcolors[3],"Oli"=npgcolors[4]),
+      State=c("AD"=npgcolors[5],"Control"=npgcolors[6]),width = unit(2, "mm")
+  )
+)
+column_ha=HeatmapAnnotation(Celltype=tmp$celltype,State=tmp$state,
+col = list(Celltype = c("In" = npgcolors[1], "Ex" = npgcolors[2], "Mic"=npgcolors[3],"Oli"=npgcolors[4]),
+      State=c("AD"=npgcolors[5],"Control"=npgcolors[6])
+  ))
+heatmap=Heatmap(jacc,col=viridis(3),show_column_names = FALSE)+rowannot
+
+pdf(file="Figures/module_cross_heatmpa.pdf",width=5,height=4)
+heatmap
+dev.off()
+
+####cell type specific module compare
+celltypes=c("Mic","Oli","Ex","In")
+for (i in 1:length(celltypes))
+{
+  ct.df=data[data$target %like% celltypes[i],]
+  m=acast(ct.df, TF~target, value.var="score")
+  m=t(m)
+  m[is.na(m)]=0 #set NA =0
+  #find cardinalities
+  # Find that paper and add reference
+  i12 = m %*% t(m)
+  s = diag(i12) %*% matrix(1, ncol = length(diag(i12)))
+  u12 = s + t(s) - i12
+  jacc= i12/u12
+  jacc[jacc > 0.5] = 1
+  diag(jacc)=0
+  tmp=data.frame(cell=colnames(jacc))
+  tmp$celltype=ifelse(tmp$cell %like% "Ex","Ex",ifelse(tmp$cell %like% "In","In",ifelse(tmp$cell %like% "Mic","Mic","Oli")))
+  tmp$state=ifelse(tmp$cell %like% "AD","AD","Control")
+
+
+  column_ha=HeatmapAnnotation(State=tmp$state,
+    col = list(State=c("AD"=npgcolors[1],"Control"=npgcolors[2]),width = unit(2, "mm"))
+  )
+
+  rowannot=rowAnnotation(State=tmp$state,
+    col = list(State=c("AD"=npgcolors[1],"Control"=npgcolors[7]),width = unit(2, "mm"))
+  )
+  name=paste(celltypes[i],"module_compare_htmap",sep=".")
+  heatmap=Heatmap(jacc,col=viridis(3),show_column_names = FALSE,bottom_annotation=column_ha)+rowannot
+  assign(name, heatmap)
+}
+
+pdf(file="Figures/EX.module_compare.heatmap.pdf",width=5,height=4)
+Ex.module_compare_htmap
+dev.off()
+
+pdf(file="Figures/In.module_compare.heatmap.pdf",width=5,height=4)
+In.module_compare_htmap
+dev.off()
+
+pdf(file="Figures/Mic.module_compare.heatmap.pdf",width=5,height=4)
+Mic.module_compare_htmap
+dev.off()
+
+pdf(file="Figures/Oli.module_compare.heatmap.pdf",width=5,height=4)
+Oli.module_compare_htmap
+dev.off()
+
 ################################################################
 
 #plotting

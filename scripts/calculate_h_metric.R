@@ -101,9 +101,8 @@ celltypes=c("Mic","Oli","Ex","In")
   theme(text = element_text(size = 10)) +
   theme_bw(base_size=12)
 
-  pdf(file="Figures/p.rand.all.ct.h.dist.pdf")
-  p.rand.all.ct.h.dist
-  dev.off()
+  ggsave(p.rand.all.ct.h.dist,file="Figures/p.rand.all.ct.h.dist.pdf", device="pdf",height=4,width=4,units="in")
+
 
   p.AD.all.ct.h.dist=ggplot(AD.all.cts.dist, aes(x=h))+geom_histogram()+
   labs(x="hierarchy height",y="Count")+ facet_wrap(~cell) +ggtitle("AD Networks")+
@@ -123,9 +122,8 @@ celltypes=c("Mic","Oli","Ex","In")
   annotate("rect",xmin=0.33,xmax=1,ymin=-0,ymax=Inf, alpha=0.2, fill="blue")+
   theme(text = element_text(size = 10)) +
   theme_bw(base_size=12)
-  pdf(file="Figures/p.Ctrl.all.ct.h.dist.pdf")
-  p.Ctrl.all.ct.h.dist
-  dev.off()
+
+ggsave(p.Ctrl.all.ct.h.dist,file="Figures/p.Ctrl.all.ct.h.dist.pdf", device="pdf",height=4,width=4,units="in")
 
 
 
@@ -216,19 +214,20 @@ for (i in 1:length(celltypes))
 
 
   #   plot sankey
-  #  p.df = df.deg.hei %>% make_long(colnames(df.deg.hei[,5:6]))
-  #  p=ggplot(p.df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
-  #    geom_sankey(flow.alpha = .6,
-  #                node.color = "gray30") +
-  #    scale_fill_manual(values = c("red", "green", "blue"), name="Hierarchy Levels") +
-  #    labs(x=NULL)+
-  #    theme_sankey(base_size = 12) +
-  #    ggtitle(celltypes[i])+theme(plot.title = element_text(hjust = 0.30,vjust=0.9))
+    p.df = df.deg.hei %>% make_long(colnames(df.deg.hei[,5:6]))
+    p=ggplot(p.df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+      geom_sankey(flow.alpha = .6,
+                  node.color = "gray30") +
+      scale_fill_manual(values = c("red", "green", "blue"), name="Hierarchy Levels") +
+      labs(x=NULL)+
+      theme_sankey(base_size = 12) +
+      ggtitle(celltypes[i])+theme(plot.title = element_text(hjust = 0.30,vjust=0.9))+
+      theme(legend.position = "none")
     name=paste("p",pattern,sep=".")
     name=paste(name,".sankey.TFNet",sep="")
     name=paste(name,"pdf",sep=".")
     name=paste("Figures",name,sep="/")
-  #  ggsave(p,filename=name, device="pdf" )
+    ggsave(p,filename=name, device="pdf", height=2,width=2,units="in" )
 }
 
 

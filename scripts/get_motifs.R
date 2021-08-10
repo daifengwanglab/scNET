@@ -19,9 +19,6 @@ for(i in 1:length(nets))
   tag=gsub(".network","",name)
   name=paste(tag,"motifs",sep=".")
   net=as.data.frame(lapply(nets[i],get))
-  TF.net1=net[net$TFbs %in% "promoter", ]
-  TF.net2=net[net$TFbs %in% "both", ]
-  TF.net=rbind(TF.net1,TF.net2)
   TF.net=net[,c("TF","TG","mse")]
   TF.net=distinct(TF.net)
   net.igraph=graph_from_data_frame(TF.net, directed = TRUE, vertices = NULL)

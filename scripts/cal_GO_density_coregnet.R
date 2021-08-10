@@ -57,6 +57,7 @@ for(i in 1:length(nets))
   assign(name,GO.density.tbl)
 }
 
+GOBP_terms.df=data.frame(GOname=NULL,cell=NULL)
 density.no.BP.perturbed=data.frame(cell=NULL,pos=NULL,neg=NULL)
 for (i in 1:length(celltypes))
 {
@@ -78,6 +79,11 @@ for (i in 1:length(celltypes))
   assign(name,d)
   pos=nrow(d[d$lfc > 1,])
   neg=nrow(d[d$lfc < -1,])
+  if(pos > 0 | neg > 0)
+  {
+    tmp.df=data.frame(GOname=rownames(d[d$abslfc > 1,]), cell=celltypes[i])
+    GOBP_terms.df=rbind(GOBP_terms.df,tmp.df)
+  }
   tmp.df=data.frame(cell=celltypes[i],pos= pos,neg=neg)
   density.no.BP.perturbed=rbind(density.no.BP.perturbed,tmp.df)
 }

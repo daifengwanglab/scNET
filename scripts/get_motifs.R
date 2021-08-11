@@ -13,6 +13,7 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #source('../scNET-devel/scripts/convert_ct_nets_to_igraph.R')
 
 nets=ls(pattern="*\\.network")
+motif.enrichment.tbl=data.frame(Motif=NULL, zscore=NULL,cell=NULL,state=NULL)
 for(i in 1:length(nets))
 {
   name=nets[i]
@@ -21,36 +22,45 @@ for(i in 1:length(nets))
   net=as.data.frame(lapply(nets[i],get))
   TF.net=net[,c("TF","TG","mse")]
   TF.net=distinct(TF.net)
-  net.igraph=graph_from_data_frame(TF.net, directed = TRUE, vertices = NULL)
-  assign(name, igraph::motifs(net.igraph))
+  TF.net=TF.net[TF.net$TG %in% TF.net$TF,]
+  TF.net.igraph=graph_from_data_frame(TF.net, directed = TRUE, vertices = NULL)
+  #net.igraph=graph_from_data_frame(TF.net, directed = TRUE, vertices = NULL)
+  motifs=igraph::motifs(TF.net.igraph)
+  motifs.count=as.data.frame(motifs)
+  colnames(motifs.count)=c("Count")
+  motifs.count$Motif=rownames(motifs.count)
+  motifs.count=motifs.count[,2:1]
+  for(j in 1:10000)
+  {
+    TF.net.r=TF.net
+    TF.net.r$TF=sample(TF.net.r$TF)
+    TF.net.rand=graph_from_data_frame(TF.net.r, directed = TRUE, vertices = NULL)
+  #  TF.net.rand=erdos.renyi.game(length(V(TF.net.igraph)),length(E(TF.net.igraph)), type="gnm",directed = TRUE)
+    r.motifs=igraph::motifs(TF.net.rand)
+    r.motifs.count=as.data.frame(r.motifs)
+    colnames(r.motifs.count)=paste("Count_random",j,sep=".")
+    r.motifs.count$Motif=rownames(r.motifs.count)
+    r.motifs.count=r.motifs.count[,2:1]
+    motifs.count=inner_join(motifs.count,r.motifs.count)
+  }
+  rand=motifs.count[,3:ncol(motifs.count)]
+  motifs.count=motifs.count[,1:2]
+  z.df=data.frame(Motif=NULL, zscore=NULL)
+  for (k in 1:nrow(rand))
+  {
+    sd=sd(rand[k,])
+    mean=rowMeans(rand[k,],na.rm=T)
+    z=(motifs.count[k,2] - mean)/sd
+    m.z.df=data.frame(Motif=k,zscore=z)
+    z.df=rbind(z.df,m.z.df)
+  }
+  z.df$cell=tag
+  motif.enrichment.tbl=rbind(motif.enrichment.tbl,z.df)
+
 }
+ motif.enrichment.tbl$state=ifelse(motif.enrichment.tbl$cell %like% "AD","AD","Ctrl")
+  motif.enrichment.tbl$cell=gsub("Ctrl.","",motif.enrichment.tbl$cell)
+  motif.enrichment.tbl$cell=gsub("AD.","",motif.enrichment.tbl$cell)
 
-motif_list=ls(pattern="*.motifs")
-for(i in 1:length(motif_list))
-{
-  name=motif_list[i]
-  tag=gsub("_counts.motifs","",name)
-  name=paste(tag,"motif_counts",sep=".")
-  count=as.data.frame(lapply(motif_list[i],get))
-  colnames(count)=c("Count")
-  #count=count[,c("MotifId","Count")]
-  count$celltype=tag
-  count$motifID=rownames(count)
-  assign(name, count)
-}
-
-count_list=ls(pattern="*.motif_counts")
-df=as.data.frame(lapply(count_list[1],get))
-for(i in 2:length(count_list))
-{
-  df=rbind(df,as.data.frame(lapply(count_list[i],get)))
-}
-tmp=xtabs(Count~motifID+celltype, data=df)
-tmp=tmp[rowSums(tmp[])>0,]
-df=melt(tmp)
-
-#remove motifID 7
-#df=df[df$motifID !=7,]
-#df=df[df$motifID !=3,]
-
-p=ggplot(df,aes(x=value,y=celltype, fill=as.character(motifID))) + geom_bar(position="fill", stat="identity")
+p=ggplot(motif.enrichment.tbl,aes(x=as.character(Motif),y=zscore,fill=state))+geom_bar(stat="identity",position="dodge")+facet_wrap(~cell,ncol=1)
+#ggsave(p,file="~/Desktop/tmp.pdf")

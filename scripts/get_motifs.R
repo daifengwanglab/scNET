@@ -30,7 +30,7 @@ for(i in 1:length(nets))
   colnames(motifs.count)=c("Count")
   motifs.count$Motif=rownames(motifs.count)
   motifs.count=motifs.count[,2:1]
-  for(j in 1:10000)
+  for(j in 1:1000)
   {
     TF.net.r=TF.net
     TF.net.r$TF=sample(TF.net.r$TF)

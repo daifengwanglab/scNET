@@ -6,11 +6,16 @@ library(tidyr)
 library(Loregic)
 library(dplyr)
 
+args=("Loregic/Mic.AD.loregic.out")
+
 loregicOut=read.table(args[1], header=T, sep="\t")
-bin.mat=read.table(args[2], header=T, sep="\t")
-bin.mat=distinct(bin.mat)
-rownames(bin.mat)=bin.mat$Gene
-bin.mat$Gene=NULL
+loregic.TF=loregicOut[loregicOut$target %in% loregicOut$RF1 | loregicOut$target %in% loregicOut$RF2,]
+loregicOut=loregic.TF
+
+#bin.mat=read.table(args[2], header=T, sep="\t")
+#bin.mat=distinct(bin.mat)
+#rownames(bin.mat)=bin.mat$Gene
+#bin.mat$Gene=NULL
 
 tmp=loregicOut %>% unite(x, c(RF1,RF2,target), sep="_")
 rownames(tmp)=tmp$x
@@ -39,6 +44,21 @@ tmp$triplet=rownames(tmp)
 tmp=tmp %>% separate(triplet, c("RF1","RF2","target"),sep="_")
 rownames(tmp)=c()
 gate_consistent_trips=tmp
+
+#count occurences per gate
+#df=data.frame(matrix(NA, nrow = 1, ncol = 1))
+#colnames(df)=c("Count")
+df=data.frame(Count=NULL)
+for (i in 1:ncol(DF))
+{
+  count=as.data.frame(dim(DF[which(DF[,i]>0),])[1])
+  rownames(count)=colnames(DF)[i]
+  colnames(count)="Count"
+  df=rbind(df,count)
+}
+
+df$cell="Mic"
+
 
 targets=unique(gate_consistent_trips$target)
 pvalues=data.frame(matrix(ncol=2,nrow=1))

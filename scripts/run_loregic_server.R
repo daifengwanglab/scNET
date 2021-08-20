@@ -47,12 +47,15 @@ gexpr= t(cell.joined.df[,log10(colSums(cell.joined.df)+1)> 1])
 
 
 data=read.table(args[1], header=T, sep="\t",stringsAsFactors=FALSE)
-data=data[data$mse<0.1 & data$abs_coef > 0.01,]
-TF.net1=data[data$TFbs %in% "promoter", ]
-TF.net2=data[data$TFbs %in% "both", ]
-TF.net=rbind(TF.net1,TF.net2)
-TF.net=TF.net[,c("TF","TG","mse")]
+net=data[data$mse<0.1 & data$abs_coef > 0.01,]
+TF.net=net[,c("TF","TG","mse")]
 TF.net=distinct(TF.net)
+TF.net=TF.net[TF.net$TG %in% TF.net$TF,]
+#TF.net1=data[data$TFbs %in% "promoter", ]
+#TF.net2=data[data$TFbs %in% "both", ]
+#TF.net=rbind(TF.net1,TF.net2)
+#TF.net=TF.net[,c("TF","TG","mse")]
+#TF.net=distinct(TF.net)
 TF.net=TF.net[,1:2]
 
 nodes=append(unique(TF.net$TF),unique(TF.net$TG))

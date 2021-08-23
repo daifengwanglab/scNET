@@ -63,4 +63,5 @@ for(i in 1:length(nets))
   motif.enrichment.tbl$cell=gsub("AD.","",motif.enrichment.tbl$cell)
 
 p=ggplot(motif.enrichment.tbl,aes(x=as.character(Motif),y=zscore,fill=state))+geom_bar(stat="identity",position="dodge")+facet_wrap(~cell,ncol=1)
-#ggsave(p,file="~/Desktop/tmp.pdf")
+
+ggsave(p,filename="Figures/p.motifs.pdf", device="pdf",width=4,height=6,units="in")

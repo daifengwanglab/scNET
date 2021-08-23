@@ -6,16 +6,16 @@ library(tidyr)
 library(Loregic)
 library(dplyr)
 
-args=("Loregic/Mic.AD.loregic.out")
+#args=("Loregic/Mic.AD.loregic.out")
 
 loregicOut=read.table(args[1], header=T, sep="\t")
 loregic.TF=loregicOut[loregicOut$target %in% loregicOut$RF1 | loregicOut$target %in% loregicOut$RF2,]
 loregicOut=loregic.TF
 
-#bin.mat=read.table(args[2], header=T, sep="\t")
-#bin.mat=distinct(bin.mat)
-#rownames(bin.mat)=bin.mat$Gene
-#bin.mat$Gene=NULL
+bin.mat=read.table(args[2], header=T, sep="\t")
+bin.mat=distinct(bin.mat)
+rownames(bin.mat)=bin.mat$Gene
+bin.mat$Gene=NULL
 
 tmp=loregicOut %>% unite(x, c(RF1,RF2,target), sep="_")
 rownames(tmp)=tmp$x
@@ -57,7 +57,7 @@ for (i in 1:ncol(DF))
   df=rbind(df,count)
 }
 
-df$cell="Mic"
+df$cell=args[3]
 
 
 targets=unique(gate_consistent_trips$target)
@@ -65,14 +65,14 @@ pvalues=data.frame(matrix(ncol=2,nrow=1))
 colnames(pvalues)=c("pvalue","qvalue")
 
 
-
+print("nrow(gate_consistent_trips)")
 for(i in 1:nrow(gate_consistent_trips))
 {
     print (paste("triplet:",i))
     count=0
     trip.gate=colnames(gate_consistent_trips[,1:14])[max.col(gate_consistent_trips[i,1:14])]
     trip=gate_consistent_trips[i,c("RF1","RF2","target")]
-    for(j in 1:10)
+    for(j in 1:3)
     {
       rand.target=targets[[sample(1:length(targets), 1)]]
       rand.trip=trip
@@ -90,22 +90,9 @@ for(i in 1:nrow(gate_consistent_trips))
 }
 
 pvalues=pvalues[-1,]
-gate_consistent_trips.pvals=merge(gate_consistent_trips,pvalues)
+gate_consistent_trips$pvalue=pvalues$pvalue
 
-write.table(gate_consistent_trips.pvals, file=paste(args[2],"gate_consistent.txt",sep="."), sep="\t",col.names=TRUE, row.names=FALSE)
+write.table(gate_consistent_trips, file=paste(args[3],"gate_consistent.txt",sep="."), sep="\t",col.names=TRUE, row.names=FALSE)
 
-count occurences per gate
-df=data.frame(matrix(NA, nrow = 1, ncol = 1))
-colnames(df)=c("Count")
-for (i in 1:ncol(DF))
-{
-  count=as.data.frame(dim(DF[which(DF[,i]>0),])[1])
-  rownames(count)=colnames(DF)[i]
-  colnames(count)="Count"
-  df=rbind(df,count)
-}
 
-statetag=paste(args[2],args[3],sep=".")
-filename=paste(statetag,"gate_consistent_counts.txt",sep=".")
-
-write.table(df, file=filename, sep="\t",col.names=TRUE, row.names=FALSE)
+save.image(paste(args[3],"image",sep="."))

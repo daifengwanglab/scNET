@@ -94,9 +94,9 @@ npgcolors=pal_npg("nrc", alpha = 1)(10)
 p.no_density_GOBP=ggplot(df_to_plot,aes(x=cell,y=value)) +
   geom_col(aes(fill=variable),width=0.5)+
   labs(y="# of GOBP",x="Cell types")+
-  scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("+ve","-ve"))+
+  scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
-ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
+#ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
 
 #tmp1=merge(Ex.genesets.density.tbl,In.genesets.density.tbl,by="GOname")
 #tmp2=merge(Mic.genesets.density.tbl,Oli.genesets.density.tbl,by="GOname")

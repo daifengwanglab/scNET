@@ -36,37 +36,37 @@ celltypes=c("Mic","Oli","Ex","In")
     colnames(df)=c("gene",newhcolname)
     assign(name,df)
     pcounter=0
-    for (j in 1:10)
-    {
-      TF.net.rand=erdos.renyi.game(length(V(TF.net.igraph)),length(E(TF.net.igraph)), type="gnm",directed = TRUE)
-      TF.net.rand.df=as.data.frame(get.edgelist(TF.net.rand))
-      colnames(TF.net.rand.df)=c("TF","TG")
-      out.deg=get_centrality(TF.net.rand.df,"degree_out",tag)
-      in.deg=get_centrality(TF.net.rand.df,"degree_in",tag)
-      df.r=merge(out.deg,in.deg,by="gene",all=TRUE)
-      colnames(df.r)=c("gene","out.d","in.d")
-      df.r$h=(df.r$out.d-df.r$in.d)/(df.r$out.d+df.r$in.d)
-      df.r=df.r[,c("gene","h")]
-      distTable=rbind(distTable,df.r)
-      assign(distTblName,distTable)
-      pval=ks.test(df.r$h,df[,2],alternative="less")$p.value
-      if(pval < 0.05) {pcounter=pcounter+1}
-    }
-    tmp=data.frame(pcounter=pcounter,cell=tag)
-    pcounter.tbl=rbind(pcounter.tbl,tmp)
-  }
+  #  for (j in 1:100)
+  #  {
+  #    TF.net.rand=erdos.renyi.game(length(V(TF.net.igraph)),length(E(TF.net.igraph)), type="gnm",directed = TRUE)
+  #    TF.net.rand.df=as.data.frame(get.edgelist(TF.net.rand))
+  #    colnames(TF.net.rand.df)=c("TF","TG")
+  #    out.deg=get_centrality(TF.net.rand.df,"degree_out",tag)
+  #    in.deg=get_centrality(TF.net.rand.df,"degree_in",tag)
+  #    df.r=merge(out.deg,in.deg,by="gene",all=TRUE)
+  #    colnames(df.r)=c("gene","out.d","in.d")
+  #    df.r$h=(df.r$out.d-df.r$in.d)/(df.r$out.d+df.r$in.d)
+  #    df.r=df.r[,c("gene","h")]
+  #    distTable=rbind(distTable,df.r)
+  #    assign(distTblName,distTable)
+  #    pval=ks.test(df.r$h,df[,2],alternative="less")$p.value
+  #    if(pval < 0.05) {pcounter=pcounter+1}
+  #  }
+  #  tmp=data.frame(pcounter=pcounter,cell=tag)
+  #  pcounter.tbl=rbind(pcounter.tbl,tmp)
+ }
 
   #plot rand dist of all ct AD networks
-  rand.all.cts.dist=data.frame(gene=NULL,h=NULL,cell=NULL,network=NULL)
-  for (i in 1:length(celltypes))
-  {
-    pattern=paste(celltypes[i],".hie.ht.randomDist",sep="")
-    pattern=paste("AD",pattern,sep=".")
-    df=get(pattern)
-    df$cell=celltypes[i]
-    df$network="random"
-    rand.all.cts.dist=rbind(rand.all.cts.dist,df)
-  }
+#  rand.all.cts.dist=data.frame(gene=NULL,h=NULL,cell=NULL,network=NULL)
+#  for (i in 1:length(celltypes))
+#  {
+#    pattern=paste(celltypes[i],".hie.ht.randomDist",sep="")
+#    pattern=paste("AD",pattern,sep=".")
+#    df=get(pattern)
+#    df$cell=celltypes[i]
+#    df$network="random"
+#    rand.all.cts.dist=rbind(rand.all.cts.dist,df)
+#  }
 
   AD.all.cts.dist=data.frame(gene=NULL,h=NULL,cell=NULL,network=NULL)
   for (i in 1:length(celltypes))
@@ -91,6 +91,26 @@ celltypes=c("Mic","Oli","Ex","In")
     df$network="Ctrl"
     Ctrl.all.cts.dist=rbind(Ctrl.all.cts.dist,df)
   }
+
+  #microglia scatter plot
+  mic.df=left_join(Ctrl.Mic.hie.ht,AD.Mic.hie.ht)
+  mic.df$change=abs(mic.df$Ctrl.Mic.h-mic.df$AD.Mic.h)
+  mic.df[order(-mic.df$change),]
+  
+  #https://ggrepel.slowkow.com/articles/examples.html
+  p.mic.scatter=ggplot(mic.df,aes(x=Ctrl.Mic.h,y=AD.Mic.h,label=ifelse(mic.df$change >0.07, mic.df$gene, "")))+
+  geom_point(color = "black",alpha=0.5) +
+    geom_text_repel(
+      point.padding = 0.2,
+       nudge_x = .15,
+       nudge_y = .5,
+       segment.curvature = -1e-20,
+       arrow = arrow(length = unit(0.015, "npc"))
+     ) +
+     theme(legend.position = "none")+labs(x="hierarchy height control",y="hierarchy height AD")+
+     theme(text = element_text(size = 10)) +
+     theme_bw(base_size=12)
+ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,width=4)
 
 
   p.rand.all.ct.h.dist=ggplot(rand.all.cts.dist, aes(x=h))+geom_histogram()+

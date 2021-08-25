@@ -48,11 +48,63 @@ for(i in 1:length(nets))
 ##################
 ##enrichment analysis
 
+#DO
+diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
+"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
+
+module.DO.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
+
+source('~/work/scNET_manuscript/get_api.R')
+
+#DO enrichment
+list=ls(pattern="*\\.modules")
+for (i in 1:length(list))
+{
+  total=0
+  annotated=0
+  totalBP=0
+  name=list[i]
+  name=gsub(".network.JI.coreg.modules","",name)
+  df=get(list[i])
+  modnames=unique(factor(df$moduleID))
+#  universe=df$gene
+  total=length(modnames)
+  print(paste(name,length(modnames),sep=":"))
+  for (j in 1:length(modnames))
+  {
+    mod.genes=df[df$moduleID %in% modnames[j],]$gene
+    hyp_obj = disease_enrichment( entities =mod.genes, vocabulary = "HGNC", database = "ALL")
+    hyp_df =  hyp_obj@qresult[hyp_obj@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+    if(nrow(hyp_df) > 0)
+    {
+      annotated=annotated+1
+      print(paste(modnames[j],nrow(hyp_df),sep=":"))
+      hyp_df$cell=name
+      hyp_df$module=modnames[j]
+    }
+    diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
+    newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated)
+  }
+  module.DO.enrich.tbl=rbind(module.DO.enrich.tbl,newtbl)
+}
+
+alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
+ctrl.mic.alz.genes=Ctrl.Mic.network.JI.coreg.modules[Ctrl.Mic.network.JI.coreg.modules$moduleID ==2,]$gene
+indx.c=match(ctrl.mic.alz.genes,colnames(Ctrl.Mic.network.JI.coreg.mat))
+indx.a=match(ctrl.mic.alz.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
+ctrl.mic.alz.genes.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.c,indx.a]
+g=graph.adjacency(ctrl.mic.alz.genes.coregnet.mat,weighted=TRUE)
+df <- get.data.frame(simplify(g))
+#df=df[df$weight >= 0.5,]
+ctrl.mic.alz.genes.coregnet.df=df
+
+#GO enrichment
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
 
 module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
 #genesets <- msigdb_gsets("Homo sapiens", "C2", "CP:KEGG", clean=TRUE)
+
 
 list=ls(pattern="*\\.modules")
 for (i in 1:length(list))

@@ -201,7 +201,7 @@ detect_modules = function(matrix)
 	dissMatrix = 1 - matrix
 	# Call the hierarchical clustering function
 	geneTree = flashClust(as.dist(dissMatrix),method="average");
-	minModuleSize = 10;
+	minModuleSize = 30;
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
 	dynamicColors = labels2colors(dynamicMods)

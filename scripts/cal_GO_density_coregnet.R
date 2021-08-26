@@ -46,7 +46,9 @@ for(i in 1:length(nets))
     {
       gs.mat=mat[indx1,indx2]
       g=graph_from_adjacency_matrix(gs.mat, weighted=TRUE, diag=FALSE, mode='undirected')
-      e.density=edge_density(g)
+      df= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+      e.density=sum(df$weight)/length(unique(gs))
+      #e.density=edge_density(g)
       df=data.frame("GOname"=gsname,"edgedensity"=e.density)
       GO.density.tbl=rbind(GO.density.tbl,df)
     }
@@ -100,7 +102,7 @@ p.no_density_GOBP=ggplot(df_to_plot,aes(x=cell,y=value)) +
   labs(y="# of pathways",x="Cell types")+
   scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
-ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
+#ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
 
 #tmp1=merge(Ex.genesets.density.tbl,In.genesets.density.tbl,by="GOname")
 #tmp2=merge(Mic.genesets.density.tbl,Oli.genesets.density.tbl,by="GOname")

@@ -26,7 +26,7 @@ for(i in 1:length(nets))
   name=paste(name,"JI.coreg.mat",sep=".")
   assign(name, find_target_pairs_matrix(net))
   mat=get(name)
-  mat[mat < 0.2] <-0 #remove edges with less than 10% overlap
+  mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
   name=gsub(".mat",".modules", name)
   assign(name, detect_modules(mat))
 }
@@ -55,11 +55,9 @@ for(i in 1:length(list))
     indx.c=indx.c[!is.na(indx.c)]
     indx.r=indx.r[!is.na(indx.r)]
     module.mat=mat[indx.r,indx.c]
-    g=graph.adjacency(module.mat,weighted=TRUE)
+    g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
     df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-    df.2=df.2[df.2$weight >= 0.2,]
-    g=igraph::graph_from_data_frame(df.2,directed=FALSE)
-    e.density.Ctrl=edge_density(g,loops = FALSE)
+    e.density.Ctrl=sum(df.2$weight)/length(unique(module))
 
     matname=paste("AD",cell,sep=".")
     matname=paste(matname,".network.JI.coreg.mat",sep="")
@@ -69,11 +67,9 @@ for(i in 1:length(list))
     indx.c=indx.c[!is.na(indx.c)]
     indx.r=indx.r[!is.na(indx.r)]
     module.mat=mat[indx.r,indx.c]
-    g=graph.adjacency(module.mat,weighted=TRUE)
+    g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
     df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-    df.2=df.2[df.2$weight >= 0.2,]
-    g=igraph::graph_from_data_frame(df.2,directed=FALSE)
-    e.density.AD=edge_density(g,loops = FALSE)
+    e.density.AD=sum(df.2$weight)/length(unique(module))
 
     df.3=data.frame("Modulename"=allmodules[j],"Ctrl"=e.density.Ctrl,"AD"=e.density.AD)
     df.3$lfc = log2(df.3[,colnames(df.3)%like% "AD"]/ df.3[,colnames(df.3)%like% "Ctrl"])
@@ -87,11 +83,11 @@ for(i in 1:length(list))
   d$abslfc=abs(d$lfc)
   d=d[order(-d$lfc),]
   assign(name,d)
-  pos=nrow(d[d$lfc > 1,])
-  neg=nrow(d[d$lfc < -1,])
+  pos=nrow(d[d$lfc > 0,])
+  neg=nrow(d[d$lfc < 0,])
   if(pos > 0 | neg > 0)
   {
-    tmp.df=data.frame(Modulename=rownames(d[d$abslfc > 1,]), cell= cell)
+    tmp.df=data.frame(Modulename=rownames(d[d$abslfc > 0,]), cell= cell)
     Modules.df=rbind(Modules.df,tmp.df)
   }
   tmp.df=data.frame(cell=cell,pos= pos,neg=neg)
@@ -107,4 +103,4 @@ p.no_density_Modules=ggplot(df_to_plot,aes(x=cell,y=value)) +
   labs(y="# of Modules",x="Cell types")+
   scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
-#ggsave(p.no_density_Modules,filename="Figures/p.no_density_Modules.pdf", device="pdf",width=3,height=3,units="in")
+ggsave(p.no_density_Modules,filename="Figures/p.no_density_Modules.pdf", device="pdf",width=3,height=3,units="in")

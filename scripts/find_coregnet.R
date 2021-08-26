@@ -90,23 +90,35 @@ for (i in 1:length(list))
 ################################
 #extract ALZ modules based on DO enrichment
 alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
-ctrl.mic.alz.genes=Ctrl.Mic.network.JI.coreg.modules[Ctrl.Mic.network.JI.coreg.modules$moduleID ==2,]$gene
-indx.c=match(ctrl.mic.alz.genes,colnames(Ctrl.Mic.network.JI.coreg.mat))
-indx.r=match(ctrl.mic.alz.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
+#ctrl has module 2 with alz genes signif enriched; extract the hits
+shared_symbol=alz[alz$cell %in% "Ctrl.Mic",]
+shared_symbol=as.data.frame(shared_symbol[,c("shared_symbol")])
+colnames(shared_symbol)=c("alz.hits.ctrl.module")
+shared_symbol=data.frame(alz.hits.ctrl.module = unlist(strsplit(as.character(shared_symbol$alz.hits.ctrl.module), ";")))
+alz.risk.ctrl.module.genes=unique(shared_symbol$alz.hits.ctrl.module)
+
+#select module 2 alz risk genes in ctrl mic net
+indx.c=match(alz.risk.ctrl.module.genes,colnames(Ctrl.Mic.network.JI.coreg.mat))
+indx.r=match(alz.risk.ctrl.module.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
 ctrl.mic.alz.genes.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.r,indx.c]
 g=graph.adjacency(ctrl.mic.alz.genes.coregnet.mat,weighted=TRUE)
-df <- get.data.frame(simplify(g))
-df=df[df$weight >= 0.1,]
+df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+df=df[df$weight >= 0.3,]
 ctrl.mic.alz.genes.coregnet.df=df
+write.table(ctrl.mic.alz.genes.coregnet.df,file="ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
+col.names=T,sep="\t",quote=FALSE)
+
 
 #select ctrl mic module 2 genes (alz module) in AD network
-indx.c=match(ctrl.mic.alz.genes,colnames(AD.Mic.network.JI.coreg.mat))
-indx.r=match(ctrl.mic.alz.genes,rownames(AD.Mic.network.JI.coreg.mat))
+indx.c=match(alz.risk.ctrl.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
+indx.r=match(alz.risk.ctrl.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
 AD.mic.ctrl_mod2.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
 g=graph.adjacency(AD.mic.ctrl_mod2.genes.coregnet.mat,weighted=TRUE)
-df <- get.data.frame(simplify(g))
-df=df[df$weight >= 0.1,]
+df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+df=df[df$weight >= 0.3,]
 AD.mic.ctrl_mod2.genes.coregnet.df=df
+write.table(AD.mic.ctrl_mod2.genes.coregnet.df,file="AD.ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
+col.names=T,sep="\t",quote=FALSE)
 
 
 

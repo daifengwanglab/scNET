@@ -74,7 +74,7 @@ for (i in 1:length(list))
   {
     mod.genes=df[df$moduleID %in% modnames[j],]$gene
     hyp_obj = disease_enrichment( entities =mod.genes, vocabulary = "HGNC", database = "ALL")
-    hyp_df =  hyp_obj@qresult[hyp_obj@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio")]
+    hyp_df =  hyp_obj@qresult[hyp_obj@qresult$FDR<0.01, c("Description", "FDR", "Ratio",  "BgRatio","shared_symbol")]
     if(nrow(hyp_df) > 0)
     {
       annotated=annotated+1
@@ -87,17 +87,30 @@ for (i in 1:length(list))
   }
   module.DO.enrich.tbl=rbind(module.DO.enrich.tbl,newtbl)
 }
-
+################################
+#extract ALZ modules based on DO enrichment
 alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
 ctrl.mic.alz.genes=Ctrl.Mic.network.JI.coreg.modules[Ctrl.Mic.network.JI.coreg.modules$moduleID ==2,]$gene
 indx.c=match(ctrl.mic.alz.genes,colnames(Ctrl.Mic.network.JI.coreg.mat))
-indx.a=match(ctrl.mic.alz.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
-ctrl.mic.alz.genes.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.c,indx.a]
+indx.r=match(ctrl.mic.alz.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
+ctrl.mic.alz.genes.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.r,indx.c]
 g=graph.adjacency(ctrl.mic.alz.genes.coregnet.mat,weighted=TRUE)
 df <- get.data.frame(simplify(g))
-#df=df[df$weight >= 0.5,]
+df=df[df$weight >= 0.1,]
 ctrl.mic.alz.genes.coregnet.df=df
 
+#select ctrl mic module 2 genes (alz module) in AD network
+indx.c=match(ctrl.mic.alz.genes,colnames(AD.Mic.network.JI.coreg.mat))
+indx.r=match(ctrl.mic.alz.genes,rownames(AD.Mic.network.JI.coreg.mat))
+AD.mic.ctrl_mod2.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
+g=graph.adjacency(AD.mic.ctrl_mod2.genes.coregnet.mat,weighted=TRUE)
+df <- get.data.frame(simplify(g))
+df=df[df$weight >= 0.1,]
+AD.mic.ctrl_mod2.genes.coregnet.df=df
+
+
+
+###########################
 #GO enrichment
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)

@@ -90,6 +90,8 @@ for (i in 1:length(list))
 ################################
 #extract ALZ modules based on DO enrichment
 alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
+
+
 #ctrl has module 2 with alz genes signif enriched; extract the hits
 shared_symbol=alz[alz$cell %in% "Ctrl.Mic",]
 shared_symbol=as.data.frame(shared_symbol[,c("shared_symbol")])
@@ -108,16 +110,21 @@ ctrl.mic.alz.genes.coregnet.df=df
 write.table(ctrl.mic.alz.genes.coregnet.df,file="ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
 col.names=T,sep="\t",quote=FALSE)
 
+#select alz risk genes in AD mic modules
+shared_symbol=alz[alz$cell %in% "AD.Mic",]
+shared_symbol=as.data.frame(shared_symbol[,c("shared_symbol")])
+colnames(shared_symbol)=c("alz.hits.AD.module")
+shared_symbol=data.frame(alz.hits.AD.module = unlist(strsplit(as.character(shared_symbol$alz.hits.AD.module), ";")))
+alz.risk.AD.module.genes=unique(shared_symbol$alz.hits.AD.module)
 
-#select ctrl mic module 2 genes (alz module) in AD network
-indx.c=match(alz.risk.ctrl.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
-indx.r=match(alz.risk.ctrl.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
-AD.mic.ctrl_mod2.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
-g=graph.adjacency(AD.mic.ctrl_mod2.genes.coregnet.mat,weighted=TRUE)
+indx.c=match(alz.risk.AD.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
+indx.r=match(alz.risk.AD.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
+AD.mic.alz.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
+g=graph.adjacency(AD.mic.alz.genes.coregnet.mat,weighted=TRUE)
 df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
 df=df[df$weight >= 0.3,]
-AD.mic.ctrl_mod2.genes.coregnet.df=df
-write.table(AD.mic.ctrl_mod2.genes.coregnet.df,file="AD.ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
+AD.mic.alz.genes.coregnet.df=df
+write.table(AD.mic.alz.genes.coregnet.df,file="AD.mic.alz.genes.coregnet.dat",row.names=F,
 col.names=T,sep="\t",quote=FALSE)
 
 

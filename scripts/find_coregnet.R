@@ -128,6 +128,32 @@ write.table(AD.mic.alz.genes.coregnet.df,file="AD.mic.alz.genes.coregnet.dat",ro
 col.names=T,sep="\t",quote=FALSE)
 
 
+ intersect=as.data.frame(intersect(alz.risk.AD.module.genes,alz.risk.ctrl.module.genes))
+ intersect$attr=c("common")
+ colnames(intersect)=c("gene","attr")
+
+
+ alz.risk.AD.module.genes.unique=as.data.frame(setdiff(alz.risk.AD.module.genes,alz.risk.ctrl.module.genes))
+ alz.risk.AD.module.genes.unique$attr="AD"
+ colnames(alz.risk.AD.module.genes.unique)=c("gene","attr")
+
+
+ alz.risk.Ctrl.module.genes.unique=as.data.frame(setdiff(alz.risk.ctrl.module.genes,alz.risk.AD.module.genes))
+ alz.risk.Ctrl.module.genes.unique$attr="Ctrl"
+ colnames(alz.risk.Ctrl.module.genes.unique)=c("gene","attr")
+
+
+attr.tbl=rbind(intersect,alz.risk.AD.module.genes.unique)
+attr.tbl=rbind(attr.tbl,alz.risk.Ctrl.module.genes.unique)
+
+#fold change values
+all.deg=read_xlsx("~/work/scNET_manuscript/data/gematrix/Diff.Exp.Genes.DataS2.MIT.xlsx",sheet="Mic",skip=1)[,1:9]
+mic.deg=as.data.frame(all.deg[,c(1,5)])
+colnames(mic.deg)=c("gene","FC")
+attr.tbl=left_join(attr.tbl,mic.deg)
+write.table(attr.tbl,file="attr.txt",row.names=F,
+col.names=T,sep="\t",quote=FALSE)
+
 
 ###########################
 #GO enrichment

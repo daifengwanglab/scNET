@@ -98,7 +98,7 @@ celltypes=c("Mic","Oli","Ex","In")
   mic.df[order(-mic.df$change),]
 
   #https://ggrepel.slowkow.com/articles/examples.html
-  p.mic.scatter=ggplot(mic.df,aes(x=Ctrl.Mic.h,y=AD.Mic.h,label=ifelse(mic.df$change >0.07, mic.df$gene, "")))+
+  p.mic.scatter=ggplot(mic.df,aes(x=Ctrl.Mic.h,y=AD.Mic.h,label=ifelse(mic.df$change >0.075, mic.df$gene, "")))+
   geom_point(color = "black",alpha=0.5) +
     geom_text_repel(
       point.padding = 0.2,
@@ -109,8 +109,8 @@ celltypes=c("Mic","Oli","Ex","In")
      ) +
      theme(legend.position = "none")+labs(x="hierarchy height control",y="hierarchy height AD")+
      theme(text = element_text(size = 10)) +
-     theme_bw(base_size=12)
-ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=3,width=3)
+     theme_bw(base_size=12)+ggtitle("Miroglia")
+ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,width=3)
 
 
   p.rand.all.ct.h.dist=ggplot(rand.all.cts.dist, aes(x=h))+geom_histogram()+
@@ -235,9 +235,9 @@ for (i in 1:length(celltypes))
   #   plot sankey
     p.df = df.deg.hei %>% make_long(colnames(df.deg.hei[,5:6]))
     p=ggplot(p.df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
-      geom_sankey(flow.alpha = .6,
-                  node.color = "gray30") +
-      scale_fill_manual(values = c("red", "green", "blue"), name="Hierarchy Levels") +
+      geom_sankey(flow.alpha = .3,
+                  node.color = "grey60") +
+      scale_fill_manual(values = alpha(c("red", "blue"),0.5), name="Hierarchy Levels") +
       labs(x=NULL)+
       theme_sankey(base_size = 12) +
       ggtitle(celltypes[i])+theme(plot.title = element_text(hjust = 0.30,vjust=0.9))+
@@ -257,7 +257,7 @@ p.rewiring=ggplot(plotData,aes(color=Cell, y=value, x=reorder(variable))) +
   coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
  theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.rewiring,filename="Figures/p.rewiring.pdf", device="pdf",width=2,height=3,units="in")
+ggsave(p.rewiring,filename="Figures/p.rewiring.pdf", device="pdf",width=2.5,height=3,units="in")
 
 
 plotData=melt(meanFCTbl)
@@ -268,7 +268,7 @@ coord_flip()+
   theme_bw(base_size=12) +
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
 
-ggsave(p.foldchange,filename="Figures/p.foldchange.pdf", device="pdf",width=2,height=3,units="in")
+ggsave(p.foldchange,filename="Figures/p.foldchange.pdf", device="pdf",width=2.5,height=3,units="in")
 
 
 p.promoter=ggplot(no.of.enh.tbl,aes(color=Cell, y=Promoter, x=Level)) +
@@ -277,7 +277,7 @@ p.promoter=ggplot(no.of.enh.tbl,aes(color=Cell, y=Promoter, x=Level)) +
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4])) +
   theme_bw(base_size=12) +
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.promoter,filename="Figures/p.promoter.pdf", device="pdf",width=2.2,height=3,units="in" )
+ggsave(p.promoter,filename="Figures/p.promoter.pdf", device="pdf",width=2.7,height=3,units="in" )
 
 p.enhancer=ggplot(no.of.enh.tbl,aes(color=Cell, y=Enhancer, x=Level)) +
   geom_point(size=2)+
@@ -285,7 +285,7 @@ p.enhancer=ggplot(no.of.enh.tbl,aes(color=Cell, y=Enhancer, x=Level)) +
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
   theme_bw(base_size=12) + labs(y="# of \n enhancers targeted",x="Levels")+
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.enhancer,filename="Figures/p.enhancer.pdf", device="pdf",width=2.2,height=3,units="in" )
+ggsave(p.enhancer,filename="Figures/p.enhancer.pdf", device="pdf",width=2.7,height=3,units="in" )
 
 #legend
 p.ct.legend=ggplot(no.of.enh.tbl,aes(color=Cell, y=Enhancer, x=Level)) +

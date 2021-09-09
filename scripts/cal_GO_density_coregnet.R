@@ -63,6 +63,7 @@ for(i in 1:length(nets))
   assign(name,GO.density.tbl)
 }
 
+#for stacked barplot and boxplot
 GOBP_terms.df=data.frame(GOname=NULL,cell=NULL)
 density.no.BP.perturbed=data.frame(cell=NULL,pos=NULL,neg=NULL)
 for (i in 1:length(celltypes))
@@ -92,6 +93,10 @@ for (i in 1:length(celltypes))
   }
   tmp.df=data.frame(cell=celltypes[i],pos= pos,neg=neg)
   density.no.BP.perturbed=rbind(density.no.BP.perturbed,tmp.df)
+  name=paste(celltypes[i],"genesets.density.lfc.tbl",sep=".")
+  d$cell=celltypes[i]
+  d=d[,c("lfc","cell")]
+  assign(name,d)
 }
 
 df_to_plot=melt(density.no.BP.perturbed)
@@ -103,6 +108,21 @@ p.no_density_GOBP=ggplot(df_to_plot,aes(x=cell,y=value)) +
   scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
 #ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
+
+
+#box plot
+for_boxplot=rbind(Mic.genesets.density.lfc.tbl,Oli.genesets.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,Ex.genesets.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,In.genesets.density.lfc.tbl)
+
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+p.lfc_density_GOBP_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
+  geom_boxplot()+
+  labs(y="change in GO edge density",x="Cell types")+
+ theme_bw(base_size=12)+theme(legend.position="top")
+ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_GOBP_boxplot.pdf", device="pdf",width=3,height=3,units="in")
+
+
 
 #tmp1=merge(Ex.genesets.density.tbl,In.genesets.density.tbl,by="GOname")
 #tmp2=merge(Mic.genesets.density.tbl,Oli.genesets.density.tbl,by="GOname")

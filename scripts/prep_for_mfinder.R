@@ -11,6 +11,9 @@ TF.net=net[,c("TF","TG","mse")]
 TF.net=distinct(TF.net)
 TF.net=TF.net[TF.net$TG %in% TF.net$TF,]
 
+#Add code to select TF-TF pairs with mse >= mean(TF.net$mse)
+
+
 TF.net=TF.net[,1:2]
 
 entrez=read.table('~/scGRN/data/entrez_to_hgnc_mapping.txt',header=F)

@@ -92,6 +92,11 @@ for(i in 1:length(list))
   }
   tmp.df=data.frame(cell=cell,pos= pos,neg=neg)
   density.no.Modules.perturbed=rbind(density.no.Modules.perturbed,tmp.df)
+  name=paste(cell,"module.density.lfc.tbl",sep=".")
+  d$cell=cell
+  d=d[,c("lfc","cell")]
+  assign(name,d)
+
 }
 
 df_to_plot=melt(density.no.Modules.perturbed)
@@ -104,3 +109,17 @@ p.no_density_Modules=ggplot(df_to_plot,aes(x=cell,y=value)) +
   scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
 #ggsave(p.no_density_Modules,filename="Figures/p.no_density_Modules.pdf", device="pdf",width=3,height=3,units="in")
+
+
+
+#box plot
+for_boxplot=rbind(Mic.module.density.lfc.tbl,Oli.module.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,Ex.module.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,In.module.density.lfc.tbl)
+
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+p.lfc_density_module_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
+  geom_boxplot()+
+  labs(y="change in module edge density",x="Cell types")+
+ theme_bw(base_size=12)+theme(legend.position="top")
+#ggsave(p.lfc_density_module_boxplot,filename="Figures/p.lfc_density_module_boxplot.pdf", device="pdf",width=3,height=3,units="in")

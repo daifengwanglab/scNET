@@ -88,6 +88,7 @@ for (i in 1:length(list))
   module.DO.enrich.tbl=rbind(module.DO.enrich.tbl,newtbl)
 }
 ################################
+#prep for fig 5 subnets
 #extract ALZ modules based on DO enrichment
 alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
 
@@ -110,41 +111,19 @@ ctrl.mic.alz.genes.coregnet.df=df
 write.table(ctrl.mic.alz.genes.coregnet.df,file="ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
 col.names=T,sep="\t",quote=FALSE)
 
-#select alz risk genes in AD mic modules
-shared_symbol=alz[alz$cell %in% "AD.Mic",]
-shared_symbol=as.data.frame(shared_symbol[,c("shared_symbol")])
-colnames(shared_symbol)=c("alz.hits.AD.module")
-shared_symbol=data.frame(alz.hits.AD.module = unlist(strsplit(as.character(shared_symbol$alz.hits.AD.module), ";")))
-alz.risk.AD.module.genes=unique(shared_symbol$alz.hits.AD.module)
 
-indx.c=match(alz.risk.AD.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
-indx.r=match(alz.risk.AD.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
+#select module 2 alz risk genes in AD mic net
+indx.c=match(alz.risk.ctrl.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
+indx.r=match(alz.risk.ctrl.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
 AD.mic.alz.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
 g=graph.adjacency(AD.mic.alz.genes.coregnet.mat,weighted=TRUE)
 df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
 df=df[df$weight >= 0.3,]
 AD.mic.alz.genes.coregnet.df=df
-write.table(AD.mic.alz.genes.coregnet.df,file="AD.mic.alz.genes.coregnet.dat",row.names=F,
+write.table(AD.mic.alz.genes.coregnet.df,file="AD.ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
 col.names=T,sep="\t",quote=FALSE)
 
 
- intersect=as.data.frame(intersect(alz.risk.AD.module.genes,alz.risk.ctrl.module.genes))
- intersect$attr=c("common")
- colnames(intersect)=c("gene","attr")
-
-
- alz.risk.AD.module.genes.unique=as.data.frame(setdiff(alz.risk.AD.module.genes,alz.risk.ctrl.module.genes))
- alz.risk.AD.module.genes.unique$attr="AD"
- colnames(alz.risk.AD.module.genes.unique)=c("gene","attr")
-
-
- alz.risk.Ctrl.module.genes.unique=as.data.frame(setdiff(alz.risk.ctrl.module.genes,alz.risk.AD.module.genes))
- alz.risk.Ctrl.module.genes.unique$attr="Ctrl"
- colnames(alz.risk.Ctrl.module.genes.unique)=c("gene","attr")
-
-
-attr.tbl=rbind(intersect,alz.risk.AD.module.genes.unique)
-attr.tbl=rbind(attr.tbl,alz.risk.Ctrl.module.genes.unique)
 
 #fold change values
 all.deg=read_xlsx("~/work/scNET_manuscript/data/gematrix/Diff.Exp.Genes.DataS2.MIT.xlsx",sheet="Mic",skip=1)[,1:9]
@@ -355,3 +334,27 @@ df2=module.enrich.tbl
 df2$fraction=df2$annotated/df2$total
 p.barplot=ggplot(df2, aes(x=cell,y=annotated,fill=cell)) +geom_bar(stat="identity", position=position_dodge()) +
 facet_wrap(~state)
+
+
+
+#Heatmapp
+
+paletteLength=100
+myColor <- colorRampPalette(c("yellow", "white", "blue"))(paletteLength)
+myBreaks <- c(seq(-2, 0, length.out=ceiling(paletteLength/2) + 1),
++ seq(max(mat.new)/paletteLength, 2, length.out=floor(paletteLength/2)))
+
+
+p=pheatmap(mat.new,cellwidth=12,cellheight=10,show_rownames=TRUE,
+main="Module DE",
+ breaks=myBreaks,
+ cluster_cols=FALSE,
+ cluster_rows=TRUE,
+ gaps_col = 3,
+ border_color = "grey60",
+ angle_col=c("45")
+ )
+
+pdf(file="Module-FC_page.pdf")
+p
+dev.off()

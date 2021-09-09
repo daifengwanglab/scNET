@@ -150,7 +150,7 @@ calculate_triplet_hubScores=function(loregicOut,hubtbl)
 	new
 }
 
-find_target_pairs_matrix=function(net) #network and JI threshold
+find_target_pairs_matrix=function(net) #network
 {
 	colnames(net)=c("TF","target","score")
 	m=acast(net, TF~target, value.var="score")
@@ -201,7 +201,7 @@ detect_modules = function(matrix)
 	dissMatrix = 1 - matrix
 	# Call the hierarchical clustering function
 	geneTree = flashClust(as.dist(dissMatrix),method="average");
-	minModuleSize = 30;
+	minModuleSize = 10;
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
 	dynamicColors = labels2colors(dynamicMods)

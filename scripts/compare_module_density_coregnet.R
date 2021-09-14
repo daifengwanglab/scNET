@@ -26,7 +26,7 @@ for(i in 1:length(nets))
   name=paste(name,"JI.coreg.mat",sep=".")
   assign(name, find_target_pairs_matrix(net))
   mat=get(name)
-  mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
+  mat[mat < 0.5] <-0 #remove edges with less than 10% overlap
   name=gsub(".mat",".modules", name)
   assign(name, detect_modules(mat))
 }

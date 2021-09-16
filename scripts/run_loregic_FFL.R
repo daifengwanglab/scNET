@@ -9,15 +9,16 @@ library(data.table)
 
 #/ua/cgupta8/scGRN/MIT_AD_analysis/motifs
 
-args=c("~/scGRN/MIT_AD_analysis/motifs/Mic.AD_MEMBERS.txt","~/scGRN/MIT_AD_analysis/motifs/Mic.AD.node_symbol-integar.key.txt",
-"Mic","AD")
+#args=c("~/scGRN/MIT_AD_analysis/motifs/Mic.AD_MEMBERS.txt","~/scGRN/MIT_AD_analysis/motifs/Mic.AD.node_symbol-integar.key.txt",
+#"Mic","AD")
 
-args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition
+args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition #permut_for_loregic
 
 data=read.table(args[1],skip=5, header=F)
 ids=read.table(args[2],header=T)
 ct=args[3]
 cond=args[4]
+npermut=as.numeric(args[5])
 
 colnames(data)=c("RF1","RF2","target")
 
@@ -136,10 +137,10 @@ print("nrow(gate_consistent_trips)")
 for(i in 1:nrow(gate_consistent_trips))
 {
     print (paste("triplet:",i))
-    count=0
+    count=1
     trip.gate=colnames(gate_consistent_trips[,1:14])[max.col(gate_consistent_trips[i,1:14])]
     trip=gate_consistent_trips[i,c("RF1","RF2","target")]
-    for(j in 1:100)
+    for(j in 1:npermut)
     {
       rand.target=targets[[sample(1:length(targets), 1)]]
       rand.trip=trip
@@ -152,11 +153,16 @@ for(i in 1:nrow(gate_consistent_trips))
         count=count+1
       }
     }
-    pval=(1+count)/10
+
+    print (count)
+    pval=count/(npermut+1)
     pvalues=rbind(pvalues,pval)
 }
 
 pvalues=pvalues[-1,]
 gate_consistent_trips$pvalue=pvalues$pvalue
 
-write.table(gate_consistent_trips, file=paste(args[3],"gate_consistent.txt",sep="."), sep="\t",col.names=TRUE, row.names=FALSE)
+filename=paste(ct,cond,sep=".")
+filename=paste(filename,"gate_consistent_FLL_trips.txt",sep=".")
+
+write.table(gate_consistent_trips, file=filename, sep="\t",col.names=TRUE, row.names=FALSE)

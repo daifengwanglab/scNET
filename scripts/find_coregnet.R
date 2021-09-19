@@ -17,7 +17,7 @@ set.seed(123)
 
 nets=ls(pattern="*\\.network")
 
-th=0.2
+#th=0.2
 for(i in 1:length(nets))
 {
   name=nets[i]
@@ -28,100 +28,116 @@ for(i in 1:length(nets))
   name=paste(name,"JI.coreg.mat",sep=".")
   assign(name, find_target_pairs_matrix(net))
   mat=get(name)
-  mat[mat < th] <-0 #remove edges with less than 10% overlap
+#  mat[mat < th] <-0 #remove edges with less than th% overlap
   name=gsub(".mat",".modules", name)
   assign(name, detect_modules(mat))
-  #for (j in 1:nrandnets)
-  #{
-  #  net.rand.df=net
-#    net.rand.df$TF=sample(net.rand.df$TG)
-#    name=paste(nets[i],"randomCoregNet",sep=".")
-#    name=gsub(".network.JI.coreg.mat","",name)
-#    name=paste(name, j,sep=".")
-#    assign(name, find_target_pairs_matrix(net.rand.df))
-#    mat=get(name)
-#    mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
-#    name=paste(name,".modules", sep="")
-#    assign(name, detect_modules(mat))
-#  }
 }
 
-
-##################
-##enrichment analysis
-###########################
-#GO enrichment
-diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
-"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
-
-module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
-#genesets <- msigdb_gsets("Homo sapiens", "C2", "CP:KEGG", clean=TRUE)
-
-
+#calculate number of genes and modules in each network
 list=ls(pattern="*\\.modules")
+module_gene_count.tbl=data.frame(celltype=NULL,Nmodules=NULL,Ngenes=NULL,cond=NULL)
 for (i in 1:length(list))
 {
-  total=0
-  annotated=0
-  totalBP=0
+  df=get(list[i])
   name=list[i]
   name=gsub(".network.JI.coreg.modules","",name)
-  df=get(list[i])
-  modnames=unique(factor(df$moduleID))
-#  universe=df$gene
-  total=length(modnames)
-  print(paste(name,length(modnames),sep=":"))
-  for (j in 1:length(modnames))
-  {
-    mod.genes=df[df$moduleID %in% modnames[j],]$gene
-    hyp_obj = hypeR(mod.genes, genesets,fdr=0.01)
-    hyp_df =  hyp_obj$data
-    if(nrow(hyp_df) > 0)
-    {
-      annotated=annotated+1
-      print(paste(modnames[j],nrow(hyp_df),sep=":"))
-      hyp_df$cell=name
-      hyp_df$module=modnames[j]
-    }
-    diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
-    newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated)
-  }
-  module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
+  ct=ifelse(name %like% "Ex","Ex",ifelse(name %like% "In","In",ifelse(name %like% "Mic","Mic","Oli")))
+  cond=ifelse(name %like% "AD","AD","Ctrl")
+  tmp=data.frame(celltype=ct,Nmodules=length(unique(df$moduleID)),Ngenes=length(unique(df$gene)),cond=cond)
+  module_gene_count.tbl=rbind(module_gene_count.tbl,tmp)
 }
 
-#split random and real into two dfs
-#rand.module.enrich.tbl=module.enrich.tbl[module.enrich.tbl$cell %like% "randomCoregNet",]
-#module.enrich.tbl=module.enrich.tbl[!module.enrich.tbl$cell %like% "randomCoregNet",]
 
-#rand.diff.cent.enrich.tbl=diff.cent.enrich.tbl[diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
-#diff.cent.enrich.tbl=diff.cent.enrich.tbl[!diff.cent.enrich.tbl$cell %like%  "randomCoregNet",]
+#calculate module denisty
+density.no.Modules.perturbed=data.frame(cell=NULL,pos=NULL,neg=NULL)
+Modules.df=data.frame(Modulename=NULL,cell=NULL)
 
-#count total BP per net
-ct.totalBP=data.frame("cell"=NULL,"TotalBP"=NULL)
-list=unique(diff.cent.enrich.tbl$cell)
-for (i in 1:length(list))
+list=Filter(function(x) !any(grepl("AD", x)), list)
+for(i in 1:length(list))
 {
-  df=diff.cent.enrich.tbl[diff.cent.enrich.tbl$cell %in%  list[i],]
-  tmp.df=data.frame("cell"=list[i],"TotalBP"=length(unique(df$label)))
-  ct.totalBP=rbind(ct.totalBP,tmp.df)
+  Module.density.tbl=data.frame("Modulename"=NULL,"Ctrl"=NULL,"AD"=NULL,lfc=NULL)
+  cell=gsub(".network.JI.coreg.modules","",list[i])
+  cell=gsub("Ctrl.","",cell)
+  df=get(list[i])
+  allmodules=unique(df$moduleID)
+  #remove module0
+  allmodules= Filter(function(x) !any(grepl("0", x)), allmodules)
+  for (j in 1:length(allmodules))
+  {
+    module=df[df$moduleID %in% allmodules[j],]$gene
+    matname=paste("Ctrl",cell,sep=".")
+    matname=paste(matname,".network.JI.coreg.mat",sep="")
+    mat=get(matname)
+    indx.c=match(module,colnames(mat))
+    indx.r=match(module,rownames(mat))
+    indx.c=indx.c[!is.na(indx.c)]
+    indx.r=indx.r[!is.na(indx.r)]
+    module.mat=mat[indx.r,indx.c]
+    g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
+    df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+    e.density.Ctrl=sum(df.2$weight)/length(unique(module))
+
+    matname=paste("AD",cell,sep=".")
+    matname=paste(matname,".network.JI.coreg.mat",sep="")
+    mat=get(matname)
+    indx.c=match(module,colnames(mat))
+    indx.r=match(module,rownames(mat))
+    indx.c=indx.c[!is.na(indx.c)]
+    indx.r=indx.r[!is.na(indx.r)]
+    module.mat=mat[indx.r,indx.c]
+    g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
+    df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+    e.density.AD=sum(df.2$weight)/length(unique(module))
+
+    df.3=data.frame("Modulename"=allmodules[j],"Ctrl"=e.density.Ctrl,"AD"=e.density.AD)
+    df.3$lfc = log2(df.3[,colnames(df.3)%like% "AD"]/ df.3[,colnames(df.3)%like% "Ctrl"])
+    Module.density.tbl=rbind(Module.density.tbl,df.3)
+  }
+  colnames(Module.density.tbl)=c("Modulename","Ctrl","AD","lfc")
+  Module.density.tbl$Cell=cell
+  name=paste(cell,"Module.density.tbl",sep=".")
+
+  d=Module.density.tbl
+  d$abslfc=abs(d$lfc)
+  d=d[order(-d$lfc),]
+  assign(name,d)
+  #pos=nrow(d[d$lfc > 0,])
+  #neg=nrow(d[d$lfc < 0,])
+  #if(pos > 0 | neg > 0)
+  {
+    tmp.df=data.frame(Modulename=rownames(d[d$abslfc > 0,]), cell= cell)
+    Modules.df=rbind(Modules.df,tmp.df)
+  }
+  tmp.df=data.frame(cell=cell,pos= pos,neg=neg)
+  density.no.Modules.perturbed=rbind(density.no.Modules.perturbed,tmp.df)
+  name=paste(cell,"module.density.lfc.tbl",sep=".")
+  d$cell=cell
+  d=d[,c("lfc","cell")]
+  assign(name,d)
+
 }
 
-#count total BP per random net
-#rand.ct.totalBP=data.frame("cell"=NULL,"Total"=NULL)
-#for (i in 1:nrow(ct.totalBP))
-#{
-#  count=0
-#  tag=ct.totalBP[i,]$cell
-#  for (j in 1:nrandnets)
-#  {
-#    name=paste(tag, "network.randomCoregNet",sep=".")
-#    name=paste(name,j,sep=".")
-#    df=rand.diff.cent.enrich.tbl[rand.diff.cent.enrich.tbl$cell %like%  name,]
-#    if (length(unique(df$label)) >= ct.totalBP[i,]$TotalBP)
-#    {
-#      count=count+1
-#    }
-#  }
-#  tmp.df=data.frame("cell"=ct.totalBP[i,]$cell,Total=count
-#  rand.ct.totalBP=rbind(rand.ct.totalBP,tmp.df)
-#}
+#df_to_plot=melt(density.no.Modules.perturbed)
+
+
+#npgcolors=pal_npg("nrc", alpha = 1)(10)
+#p.no_density_Modules=ggplot(df_to_plot,aes(x=cell,y=value)) +
+  geom_col(aes(fill=variable),width=0.5)+
+  labs(y="# of Modules",x="Cell types")+
+  scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
+ theme_bw(base_size=12)+theme(legend.position="top")
+#ggsave(p.no_density_Modules,filename="Figures/p.no_density_Modules.pdf", device="pdf",width=3,height=3,units="in")
+
+
+
+#box plot
+for_boxplot=rbind(Mic.module.density.lfc.tbl,Oli.module.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,Ex.module.density.lfc.tbl)
+for_boxplot=rbind(for_boxplot,In.module.density.lfc.tbl)
+
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+p.lfc_density_module_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
+  geom_boxplot()+
+  labs(y="change in module edge density",x="Cell types")+
+ theme_bw(base_size=12)+theme(legend.position="top")
+#ggsave(p.lfc_density_module_boxplot,filename="Figures/p.lfc_density_module_boxplot.pdf", device="pdf",width=3,height=3,units="in")

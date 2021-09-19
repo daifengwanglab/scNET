@@ -7,7 +7,7 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #fig 1c in https://www.nature.com/articles/s41467-019-10591-5/figures/1
 
 #Read GO data
-data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_GO_bp_with_GO_iea_symbol.gmt')
 genesets=data$genesets
 names(genesets)=data$geneset.descriptions
 
@@ -123,3 +123,38 @@ p.lfc_density_module_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
   labs(y="change in module edge density",x="Cell types")+
  theme_bw(base_size=12)+theme(legend.position="top")
 #ggsave(p.lfc_density_module_boxplot,filename="Figures/p.lfc_density_module_boxplot.pdf", device="pdf",width=3,height=3,units="in")
+
+
+
+#plot synapse assembly subnets
+
+#extract synapse assembly genes from GO
+synapse=as.data.frame(genesets["synapse assembly"])$synapse.assembly
+
+indx.c=match(synapse,colnames(Ctrl.Mic.network.JI.coreg.mat))
+indx.c=indx.c[!is.na(indx.c)]
+indx.r=match(synapse,rownames(Ctrl.Mic.network.JI.coreg.mat))
+indx.r=indx.r[!is.na(indx.r)]
+
+synapse.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.r,indx.c]
+g=graph.adjacency(synapse.coregnet.mat,weighted=TRUE)
+df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+#df=df[df$weight >= 0.3,]
+synapse.coregnet.df=df
+#write.table(synapse.coregnet.df,file="synapse_assembly.mic.ctrl.coregnet.dat",row.names=F,
+#col.names=T,sep="\t",quote=FALSE)
+
+#select synapse assembly genes in AD mic net
+indx.c=match(synapse,colnames(AD.Mic.network.JI.coreg.mat))
+indx.c=indx.c[!is.na(indx.c)]
+
+indx.r=match(synapse,rownames(AD.Mic.network.JI.coreg.mat))
+indx.r=indx.r[!is.na(indx.r)]
+
+synapse.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
+g=graph.adjacency(synapse.coregnet.mat,weighted=TRUE)
+df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+#df=df[df$weight >= 0.3,]
+synapse.coregnet.df=df
+#write.table(synapse.coregnet.df,file="synapse_assembly.mic.AD.coregnet.dat",row.names=F,
+#col.names=T,sep="\t",quote=FALSE)

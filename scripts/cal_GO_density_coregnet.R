@@ -9,11 +9,12 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #Read GO data
 data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_GO_bp_with_GO_iea_symbol.gmt')
 
+
+#Read migsdb data
+#data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_MSigdb_August_01_2021_symbol.gmt')
+
 genesets=data$genesets
 names(genesets)=data$geneset.descriptions
-
-#Read GO data
-data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_GO_bp_with_GO_iea_symbol.gmt')
 
 
 celltypes=c("Mic","Oli","Ex","In")
@@ -36,7 +37,11 @@ for(i in 1:length(nets))
     {
       next
     }
-    print(gsname)
+    if(length(genesets[[j]]) < 10 | length(genesets[[j]]) > 300 )
+    {
+      next
+    }
+    print(paste(gsname,length(genesets[[j]])),sep=":")
     gs=genesets[[j]]
     indx1=match(gs, rownames(mat))
     indx2=match(gs,colnames(mat))
@@ -122,6 +127,8 @@ p.lfc_density_GOBP_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
  theme_bw(base_size=12)+theme(legend.position="top")
 ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_GOBP_boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
+#if using migsdb
+#ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_migsdb_boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 
 #tmp1=merge(Ex.genesets.density.tbl,In.genesets.density.tbl,by="GOname")

@@ -1,6 +1,50 @@
 
 
 #copy this to the end of 'find_coregnet.R'
+
+
+##################
+##enrichment analysis
+###########################
+#GO enrichment
+diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
+"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
+
+module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
+#genesets <- msigdb_gsets("Homo sapiens", "C2", "CP:KEGG", clean=TRUE)
+
+
+list=ls(pattern="*\\.modules")
+for (i in 1:length(list))
+{
+  total=0
+  annotated=0
+  totalBP=0
+  name=list[i]
+  name=gsub(".network.JI.coreg.modules","",name)
+  df=get(list[i])
+  modnames=unique(factor(df$moduleID))
+#  universe=df$gene
+  total=length(modnames)
+  print(paste(name,length(modnames),sep=":"))
+  for (j in 1:length(modnames))
+  {
+    mod.genes=df[df$moduleID %in% modnames[j],]$gene
+    hyp_obj = hypeR(mod.genes, genesets,fdr=0.01)
+    hyp_df =  hyp_obj$data
+    if(nrow(hyp_df) > 0)
+    {
+      annotated=annotated+1
+      print(paste(modnames[j],nrow(hyp_df),sep=":"))
+      hyp_df$cell=name
+      hyp_df$module=modnames[j]
+    }
+    diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
+    newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated)
+  }
+  module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
+}
+
 #DO
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
 "overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)

@@ -1,0 +1,16 @@
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Mic.AD.TF-TF.entrez.txt -s 3 -r 1000 -f Mic.AD -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Oli.AD.TF-TF.entrez.txt -s 3 -r 1000 -f Oli.AD -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Ex.AD.TF-TF.entrez.txt -s 3 -r 1000 -f Ex.AD -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/In.AD.TF-TF.entrez.txt -s 3 -r 1000 -f In.AD -ospmem 38
+
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Mic.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Mic.Ctrl -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Oli.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Oli.Ctrl -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/Ex.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Ex.Ctrl -ospmem 38
+
+~/tools/mfinder1.21/mfinder /ua/cgupta8/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/In.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f In.Ctrl -ospmem 38 

@@ -27,6 +27,11 @@ library(disgenet2r)
 library(ggplot2)
 library(ComplexUpset)
 library(readxl)
+library(kernlab)
+library(caret)
+library(mlbench)
+library(PRROC)
+
 
 npgcolors=pal_npg("nrc", alpha = 1)(10)
 troncolors=pal_tron("legacy", alpha = 1)(7)

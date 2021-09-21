@@ -1,67 +1,32 @@
 #!/usr/bin/env Rscript
-#args = commandArgs(trailingOnly=TRUE) #loregic_out_file celltype.state (e.g: Ex.AD)
 rm(list=ls())
+source('~/work/scNET-devel/scripts/load_libraries.R')
+source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
-library(tidyr)
-library(Loregic)
-library(dplyr)
+datadir=c("logics/motifs/1000_rands_with_100_sampling/FFL_members_full_list")
 
 celltypes=c("Mic.AD","Oli.AD","Ex.AD","In.AD","Mic.Ctrl","Oli.Ctrl","Ex.Ctrl","In.Ctrl")
 
 for (k in 1:length(celltypes))
 {
 
-cellname=paste("Loregic",celltypes[k],sep="/")
-cellname=paste(cellname,"loregic.out",sep=".")
+cellname=paste(celltypes[k],"gate_consistent_FLL_trips.txt",sep=".")
 
-loregicOut=read.table(cellname, header=T, sep="\t")
+name=paste(datadir,cellname,sep="/")
 
-tmp=loregicOut %>% unite(x, c(RF1,RF2,target), sep="_")
+loregicOut=read.table(name, header=T, sep="\t")
+colnames(loregicOut)=c("T=0","AND","RF1*~RF2","~RF1*RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1","TF1","TF2","TF.target","pvalue")
+
+tmp=loregicOut %>% unite(x, c(TF1,TF2,TF.target), sep="_")
 rownames(tmp)=tmp$x
-tmp=tmp[,-1]
-mat=tmp[apply(tmp[,], 1, function(x) !all(x==0)),] # remove gates with no scores
-colnames(mat)=c("T=0","AND","RF1*~RF2","RF1","~RF1*RF2","RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1")
-
-l=apply(mat,1,function(x) which(x==max(x))) #store max of each row in a list
-
-DF=data.frame(matrix(NA, nrow = 1, ncol = 16))
-colnames(DF)=colnames(mat)
-
-#for each list, check of the number of items in more than 2; if yes then gate-inconsistent
-for(i in 1:length(l))
-{
-    nGates=length(l[[i]])
-    if(nGates<2)
-    {
-      DF=rbind(DF,mat[i,]) #store all gate consistent in a DF df
-    }
+tmp$x=NULL
+#tmp=tmp[tmp$pvalue <= 0.01,]
+tmp$pvalue=NULL
+tmp$ct=celltypes[k]
+name=paste(celltypes[k],"ffl_logics.pval_lt_pt1",sep=".")
+assign(name, tmp)
 }
 
-DF=DF[-1,] #stores all gate consistent triplets
-tmp=DF
-tmp$triplet=rownames(tmp)
-tmp=tmp %>% separate(triplet, c("RF1","RF2","target"),sep="_")
-rownames(tmp)=c()
-gate_consistent_trips=tmp
-
-#count occurences per gate
-#df=data.frame(matrix(NA, nrow = 1, ncol = 1))
-#colnames(df)=c("Count")
-df=data.frame(Count=NULL)
-for (j in 1:ncol(DF))
-{
-  count=as.data.frame(dim(DF[which(DF[,j]>0),])[1])
-  rownames(count)=colnames(DF)[j]
-  colnames(count)="Count"
-  df=rbind(df,count)
-}
-
-df$cell=celltypes[k]
-df$gate=rownames(df)
-name=paste(celltypes[k],"logics.txt",sep=".")
-assign(name,df)
-
-}
 
  df=rbind(Ex.AD.logics.txt,In.AD.logics.txt)
  df=rbind(df,Mic.AD.logics.txt)

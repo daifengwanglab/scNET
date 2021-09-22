@@ -31,7 +31,7 @@ library(kernlab)
 library(caret)
 library(mlbench)
 library(PRROC)
-
+library(e1071)
 
 npgcolors=pal_npg("nrc", alpha = 1)(10)
 troncolors=pal_tron("legacy", alpha = 1)(7)

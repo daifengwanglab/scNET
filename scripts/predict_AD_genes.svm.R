@@ -158,8 +158,11 @@ for(i in 1:length(nets))
     seed = 111
   )
 name=paste(celltype,"auc",sep=".")
+
 assign(name,auc)
+
 }#end of ct for loop
+
 
 #make boxplots
 

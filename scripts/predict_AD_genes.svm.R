@@ -3,28 +3,17 @@
 #https://stackoverflow.com/questions/48379502/generate-a-confusion-matrix-for-svm-in-e1071-for-cv-results
 
 
-#rm(list=ls())
+rm(list=ls())
 source('~/work/scNET-devel/scripts/load_libraries.R')
 source('~/work/scNET-devel/scripts/read_data.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
-
-#gwas catalog
-
-gwas=read.table("/Users/chiraggupta/work/scNET_manuscript/genome/genesets/GWAS_catalog/full",header=T,sep="\t",quote="")
-alz.gwas=gwas[gwas$DISEASE %like% "Alzheimer",c("MAPPED_GENE")]
-
-alz.gwas=unlist(strsplit(alz.gwas, ","))
-alz.gwas=unlist(strsplit(alz.gwas, ";"))
-alz.gwas=unlist(strsplit(alz.gwas, "-"))
-alz.gwas=gsub(" ","",alz.gwas)
-alz.gwas=gsub("\"","",alz.gwas)
-alz.gwas=unique(alz.gwas)
+library(randomForest)
 
 #disease gene database
 dis=read.table("/Users/chiraggupta/work/scNET_manuscript/genome/genesets/Disgenet/all_gene_disease_associations.tsv",header=T,sep="\t",quote="")
 #select alz genes with DGA score > 0 (at least some evidence)
-alz.dis=unique(dis[dis$diseaseName %like% "Alzheimer" & dis$score > 0.1,]$geneSymbol)
+alz.dis=unique(dis[dis$diseaseName %like% "Alzheimer" & dis$score >= 0.1,]$geneSymbol)
 
 
 
@@ -33,51 +22,33 @@ alz.dis=unique(dis[dis$diseaseName %like% "Alzheimer" & dis$score > 0.1,]$geneSy
 source('~/work/scNET_manuscript/get_api.R')
 Sys.setenv(DISGENET_API_KEY= disgenet_api_key)
 
-#find DD assoc
+#find Dis-Dis assoc
 neg = disease2disease_by_gene(disease  = "C0002395",database = "CURATED",ndiseases = 100)
 qr = disgenet2r::extract(neg)
 uncorrDis=qr[qr$jaccard_genes < 0.09,]$disease2_name
-uncorrDis.genes=unique(dis[dis$diseaseName %in% uncorrDis & dis$score > 0 ,]$geneSymbol)
+uncorrDis.genes=unique(dis[dis$diseaseName %in% uncorrDis ,]$geneSymbol)
 
 
 alz=alz.dis
 
 #function to get feature scores
-get_weights = function( data, k, C)
+get_weights = function( data, fold)
 {
-  set.seed(111)
-  folds = sample(rep(1:k, length.out = nrow(data)), nrow(data))
-  z = lapply(1:k, function(x){
-    model = svm(as.factor(Class) ~ ., data = as.matrix(data[folds != x, ]), kernel = "linear", cost = C, scale = FALSE,type="C-classification")
-    w = t(model$SV) %*% model$coefs                 # weight vectors
-    #w = apply(w, 2, function(v){sqrt(sum(v^2))})  # weight
-    w = sort(w, decreasing = T)
-    return(as.data.frame(w))
-  })
-  z
+  fit = randomForest(formula= as.factor(Class) ~ ., data = data[-fold,],importance=TRUE)
+  imp=round(importance(fit), 3)
+  imp=imp[,3]
+  imp
 }
 
 
-train_and_validate = function( data, fold, C)
+train_and_validate = function( data, fold, C) #returns average balanced acc and feat, imp. scores for each fold
 {
 
-  fit = svm(as.factor(Class) ~ ., data = as.matrix(data[-fold,]), kernel = "linear", cost = C, scale = FALSE,type="C-classification")
+  #fit = svm(as.factor(Class) ~ ., data = as.matrix(data[-fold,]), kernel = "linear", cost = C, scale = FALSE,type="C-classification")
 
-  #fit = ksvm(
-  #  Class ~ .,
-  #  data = data[-fold,],
-    #data=data,
-  #  kernel = "vanilladot",
-  #  C = C,
-    #C=1,
-  #  scale=TRUE,
-    #prob.model = FALSE
-  #  type='C-svc'
-  #)
-
+  fit = randomForest(formula= as.factor(Class) ~ ., data = data[-fold,],importance=TRUE)
   # Predict the fold
   yh = predict(fit, newdata = data[fold,])
-
 
   # Compare the predictions to the labels
   #posneg = split(yh, data$Class[fold])
@@ -107,6 +78,20 @@ cv = function(data, k, CC, seed = 123)
   auc
 }
 
+cv_feat_imp = function(data, k, seed = 123)
+{
+
+    folds <- createFolds(data$Class, k = k)
+
+    # For each fold ...
+    imp=sapply(folds, function(fold)
+    {
+      get_weights(data,fold)
+    })
+  imp
+}
+
+
 nets=ls(pattern="*\\.network")
 
 #for each ct network
@@ -118,22 +103,22 @@ for(i in 1:length(nets))
   net=as.data.frame(lapply(nets[i],get))
   net=net[,c("TF","TG","abs_coef")]
   net=distinct(net)
-#  mat=tidyr::pivot_wider(net, names_from = TF, values_from = abs_coef)
-  mat=acast(net, TG~TF, value.var="abs_coef")
+  mat=tidyr::pivot_wider(net, names_from = TF, values_from = abs_coef)
   mat[is.na(mat)]=0
   mat=as.data.frame(mat)
   #label alz genes as positives in the network matrix
-  mat$Class=ifelse(rownames(mat) %in% alz,1,-1)
+  mat$Class=ifelse(mat$TG %in% alz,1,-1)
 
   mat.positive=mat[mat$Class == 1,]
 
+  print(dim(mat.positive))
 
   ##create negative labels as those that are not positives and also not related to mental disorders
-  mat.negative=mat[mat$Class == -1 & (!mat$TG %in% uncorrDis.genes),]
-  #mat.negative=mat[mat$Class == -1 ,]
+  #mat.negative=mat[mat$Class == -1 & (!mat$TG %in% uncorrDis.genes),]
+  mat.negative=mat[mat$Class == -1 ,]
 
-  
-  set.seed(100)
+
+  set.seed(123)
   #randomly select rows equal to the number of positives
   mat.tmp=sample_n(mat.negative,dim(mat.positive)[1])
 
@@ -141,7 +126,8 @@ for(i in 1:length(nets))
   mat.feat=rbind(mat.positive,mat.tmp)
 
   # Set the random seed for reproducibility
-  data=mat.feat
+  data=mat.feat[,-1]
+  colnames(data)=gsub("-","_",colnames(data))
 #  y = as.factor(data$Class)
 #  X = data
 #  X$Class = NULL
@@ -150,16 +136,18 @@ for(i in 1:length(nets))
   auc = cv(
     data = data,
     k = 5,
-    #CC = 2^seq(log2(.01), log2(10), length.out = 21),
-    #CC = 2^seq(log2(0.01), log2(10), length.out = 20),
-    #CC=2^seq(log2(1), log2(100), length.out = 5),
-    #CC=c(0.1,1,10,100),
     CC=10,
-    seed = 111
+    seed = 123
   )
-name=paste(celltype,"auc",sep=".")
+  name=paste(celltype,"auc",sep=".")
 
-assign(name,auc)
+  assign(name,auc)
+
+  f.imp=cv_feat_imp(data,5)
+  name=paste(celltype,"imp",sep=".")
+
+  assign(name,as.data.frame(f.imp))
+
 
 }#end of ct for loop
 
@@ -184,37 +172,10 @@ p.adgenes.acc.boxplot=ggplot(acc.tbl,aes(x=ct,y=acc,fill=cond)) +
   geom_boxplot(notch=FALSE)+
   labs(y="Balanced accuracy in predicting \n known AD genes",x="Cell type networks")+
  theme_bw(base_size=12)+theme(legend.position="top")
-ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
+#ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 
-
-#fit model for mic ad network
-
-net=AD.Mic.network
-net=distinct(net)
-mat=acast(net, TG~TF, value.var="abs_coef")
-mat[is.na(mat)]=0
-mat=as.data.frame(mat)
-#label alz genes as positives in the network matrix
-mat$Class=ifelse(rownames(mat) %in% alz,1,-1)
-
-mat.positive=mat[mat$Class == 1,]
-
-##create negative labels as those that are not positives and also not related to mental disorders
-mat.negative=mat[mat$Class == -1 & (!mat$TG %in% uncorrDis.genes),]
-#mat.negative=mat[mat$Class == -1 ,]
-
-set.seed(100)
-#randomly select rows equal to the number of positives
-mat.tmp=sample_n(mat.negative,dim(mat.positive)[1])
-
-#feature matrix
-mat.feat=rbind(mat.positive,mat.tmp)
-
-# Set the random seed for reproducibility
-data=mat.feat
-
-weight=get_weights(data,5,1)
-weight.mat=do.call(cbind, weight)
-weight.df=as.data.frame(rowMeans(weight.mat))
-colnames(weight.df)=c("weight")
+#select mic feature scores
+AD.Mic.imp$average=rowMeans(AD.Mic.imp)
+AD.Mic.imp=AD.Mic.imp[order(AD.Mic.imp$average),]
+#write.table(AD.Mic.imp,file="Mic.AD.Feature_weights.mat",row.names=T,col.names=T,sep="\t",quote=F)

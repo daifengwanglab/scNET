@@ -8,14 +8,11 @@ source('~/work/scNET-devel/scripts/load_libraries.R')
 source('~/work/scNET-devel/scripts/read_data.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
-library(randomForest)
 
 #disease gene database
 dis=read.table("/Users/chiraggupta/work/scNET_manuscript/genome/genesets/Disgenet/all_gene_disease_associations.tsv",header=T,sep="\t",quote="")
 #select alz genes with DGA score > 0 (at least some evidence)
 alz.dis=unique(dis[dis$diseaseName %like% "Alzheimer" & dis$score >= 0.1,]$geneSymbol)
-
-
 
 
 ###identify negative labels based on Dis-Dis-assoc
@@ -36,51 +33,44 @@ get_weights = function( data, fold)
 {
   fit = randomForest(formula= as.factor(Class) ~ ., data = data[-fold,],importance=TRUE)
   imp=round(importance(fit), 3)
-  imp=imp[,3]
+  imp=imp[,4]
   imp
 }
 
 
-train_and_validate = function( data, fold, C) #returns average balanced acc and feat, imp. scores for each fold
+##returns average balanced acc and feat, imp. scores for each fold
+#uses default mtry param for now: C is neglected
+
+train_and_validate = function( data, fold, C)
 {
-
-  #fit = svm(as.factor(Class) ~ ., data = as.matrix(data[-fold,]), kernel = "linear", cost = C, scale = FALSE,type="C-classification")
-
   fit = randomForest(formula= as.factor(Class) ~ ., data = data[-fold,],importance=TRUE)
+
   # Predict the fold
   yh = predict(fit, newdata = data[fold,])
 
-  # Compare the predictions to the labels
-  #posneg = split(yh, data$Class[fold])
-
-  # Return the AUC under the ROC
-  #roc.curve(posneg[[1]], posneg[[2]])$auc
+  # Return the balanced accuracy
   conf.mat=caret::confusionMatrix(yh, as.factor(data[fold,]$Class))
   acc=conf.mat$byClass['Balanced Accuracy']
   acc
 }
 
-# Function for doing a k-fold cross-validation for each C in CC
-cv = function(data, k, CC, seed = 123)
+# Function for doing a k-fold cross-validation for each mtry in mtry
+cv = function(data, k, mtry)
 {
-  # For each value of the hyperparameter C ...
-  auc = lapply(CC, function(C)
+  # For each value of mtry ...
+  auc = lapply(mtry, function(C)
   {
-    folds <- createFolds(data$Class, k = k)
-
-    # For each fold ...
+    folds = createFolds(data$Class, k = k)
     sapply(folds, function(fold)
     {
-      # Train an SVM, and validate on the fold
       train_and_validate(data,fold,C)
-    })#end sapply
-  })#end lapply
+    })
+  })
   auc
 }
 
-cv_feat_imp = function(data, k, seed = 123)
+cv_feat_imp = function(data, k)
 {
-
     folds <- createFolds(data$Class, k = k)
 
     # For each fold ...
@@ -128,20 +118,15 @@ for(i in 1:length(nets))
   # Set the random seed for reproducibility
   data=mat.feat[,-1]
   colnames(data)=gsub("-","_",colnames(data))
-#  y = as.factor(data$Class)
-#  X = data
-#  X$Class = NULL
 
-  # Do the cross-validation for each C in CC
-  auc = cv(
-    data = data,
-    k = 5,
-    CC=10,
-    seed = 123
-  )
-  name=paste(celltype,"auc",sep=".")
-
-  assign(name,auc)
+  #mtry=c("7","10","20","50","100")
+  for(j in 1:1)
+  {
+    auc = cv(data = data, k = 5,mtry=1)
+    name=paste(celltype,"auc",sep=".")
+    name=paste(name,j,sep="_")
+    assign(name,auc)
+  }
 
   f.imp=cv_feat_imp(data,5)
   name=paste(celltype,"imp",sep=".")
@@ -154,28 +139,32 @@ for(i in 1:length(nets))
 
 #make boxplots
 
-celltypes=c("Mic.AD","Oli.AD","Ex.AD","In.AD","Mic.Ctrl","Oli.Ctrl","Ex.Ctrl","In.Ctrl")
-list=ls(pattern="*.auc")
+celltypes=c("AD.Mic","AD.Oli","AD.Ex","AD.In","Ctrl.Mic","Ctrl.Oli","Ctrl.Ex","Ctrl.In")
 acc.tbl=data.frame(acc=NULL,ct=NULL,cond=NULL)
-for (i in 1:length(list))
+for (i in 1:length(celltypes))
 {
-    df=as.data.frame(unlist(get(list[i])))
-    colnames(df)="acc"
-    df$ct=list[i]
-    df$cond=ifelse(df$ct %like% "AD","AD","Ctrl")
-    acc.tbl=rbind(acc.tbl,df)
+    pattern=paste(celltypes[i],"auc_*",sep=".")
+    list=ls(pattern=pattern)
+    for(j in 1:length(list))
+    {
+      df=as.data.frame(unlist(get(list[j])))
+      colnames(df)="acc"
+      df$ct=celltypes[i]
+      df$cond=ifelse(df$ct %like% "AD","AD","Ctrl")
+      acc.tbl=rbind(acc.tbl,df)
+    }
 }
 acc.tbl$ct=gsub(".auc","",acc.tbl$ct)
 acc.tbl$ct=gsub("AD.","",gsub("Ctrl.","",acc.tbl$ct))
 
 p.adgenes.acc.boxplot=ggplot(acc.tbl,aes(x=ct,y=acc,fill=cond)) +
-  geom_boxplot(notch=FALSE)+
-  labs(y="Balanced accuracy in predicting \n known AD genes",x="Cell type networks")+
+  geom_boxplot(notch=TRUE)+
+  labs(y="Balanced accuracy in predicting \n known AD genes \n Repeated 5 fold CV",x="Cell type networks")+
  theme_bw(base_size=12)+theme(legend.position="top")
-#ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
+ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 
 #select mic feature scores
 AD.Mic.imp$average=rowMeans(AD.Mic.imp)
 AD.Mic.imp=AD.Mic.imp[order(AD.Mic.imp$average),]
-#write.table(AD.Mic.imp,file="Mic.AD.Feature_weights.mat",row.names=T,col.names=T,sep="\t",quote=F)
+write.table(AD.Mic.imp,file="Mic.AD.Feature_weights.mat",row.names=T,col.names=T,sep="\t",quote=F)

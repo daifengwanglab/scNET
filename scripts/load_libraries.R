@@ -32,6 +32,7 @@ library(caret)
 library(mlbench)
 library(PRROC)
 library(e1071)
+library(randomForest)
 
 npgcolors=pal_npg("nrc", alpha = 1)(10)
 troncolors=pal_tron("legacy", alpha = 1)(7)

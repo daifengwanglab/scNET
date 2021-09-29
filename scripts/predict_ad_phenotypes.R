@@ -2,6 +2,7 @@
 #https://johanndejong.wordpress.com/2018/04/04/nested-cross-validation/
 #https://stackoverflow.com/questions/48379502/generate-a-confusion-matrix-for-svm-in-e1071-for-cv-results
 
+set.seed(123)
 
 rm(list=ls())
 source('~/work/scNET-devel/scripts/load_libraries.R')
@@ -9,13 +10,10 @@ source('~/work/scNET-devel/scripts/load_libraries.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
 
-#feature matrix from AD-gene classifier
+##create a feature matrix using output (feat importance scores) from the AD-gene classifier
 fw=read.table("Mic.AD.Feature_weights.mat", header=T)
-fw$absaverage=abs(fw$average)
 fw=fw[order(fw$average),]
-positives=rownames(tail(fw,dim(fw)[1]*.1))
-negatives=rownames(head(fw,dim(fw)[1]*.1))
-labels=union(positives,negatives)
+features.tfs=rownames(tail(fw,dim(fw)[1]*.1))
 
 
 
@@ -24,42 +22,44 @@ rosmap.ge=read.table("~/Desktop/finalAlzheimersDLPFCDataSetForSaniyaToUse.csv", 
 rosmap.ge$entrezID=NULL
 colnames(rosmap.ge)=gsub("X","",colnames(rosmap.ge))
 
-rosmap.pheno=read.table("~/Desktop/AlzheimersDLPFCPhenotypesUpdated.csv", sep=",", header=T, )[-c(1:5)]
+features=rosmap.ge[rosmap.ge$geneName %in% features.tfs, ]
+rownames(features)=features$geneName
+features$geneName=NULL
+features=t(features)
+features=as.data.frame(scale(features))
+
+#phenotypes
+rosmap.pheno=read.table("~/Desktop/1_AlzheimersDLPFCPhenotypesUpdatedForSaniya.csv", sep=",", header=T, )
+
+#cerad
+patients.cerad.pos=rosmap.pheno[rosmap.pheno$CERADScore==1,]$Patient
+patients.cerad.neg=rosmap.pheno[rosmap.pheno$CERADScore==4 ,]$Patient
+
+#add labels for cerad
+cerad.train=features
+cerad.train=features[rownames(cerad.train) %in% patients.cerad.pos |rownames(cerad.train) %in% patients.cerad.neg, ]
+cerad.train$Class=ifelse(rownames(cerad.train) %in% patients.cerad.pos,"yes","no")
 
 
 #cogdx
-CERADScore.patients=rosmap.pheno[rosmap.pheno$cogdx==4 | rosmap.pheno$cogdx==5,]
+patients.cogdx.pos=rosmap.pheno[rosmap.pheno$cogdx==4 | rosmap.pheno$cogdx==5 | rosmap.pheno$cogdx==6,]$Patient
+patients.cogdx.neg=rosmap.pheno[rosmap.pheno$cogdx==1 ,]$Patient # | rosmap.pheno$cogdx==2 | rosmap.pheno$cogdx==3,
 
-CERADScore.patients.ge=rosmap.ge[,colnames(rosmap.ge) %in% c(CERADScore.patients$Patient,"geneName")]
-
-CERADScore.patients.ge.labels=CERADScore.patients.ge[CERADScore.patients.ge$geneName %in% labels,]
-tmp=scale(CERADScore.patients.ge.labels[,-1])
-rownames(tmp)=CERADScore.patients.ge.labels$geneName
-CERADScore.patients.ge.labels=as.data.frame(tmp)
-
-colnames(CERADScore.patients.ge.labels)=paste("X",colnames(CERADScore.patients.ge.labels),sep="")
+#add labels for cogdx
+cogdx.train=features
+cogdx.train=features[rownames(cogdx.train) %in% patients.cogdx.pos |rownames(cogdx.train) %in% patients.cogdx.neg, ]
+cogdx.train$Class=ifelse(rownames(cogdx.train) %in% patients.cogdx.pos,"yes","no")
 
 
-CERADScore.patients.ge.labels$Class=ifelse(rownames(CERADScore.patients.ge.labels)%in% positives,1,-1)
 
-data.cogdx=CERADScore.patients.ge.labels
+#braak
+patients.braak.pos=rosmap.pheno[rosmap.pheno$Braak.Progression==0 | rosmap.pheno$Braak.Progression==1 | rosmap.pheno$Braak.Progression==2| rosmap.pheno$Braak.Progression==3,]$Patient
+patients.braak.neg=rosmap.pheno[rosmap.pheno$Braak.Progression==4 | rosmap.pheno$Braak.Progression==5 | rosmap.pheno$Braak.Progression==6,]$Patient
 
-#cerad
-CERADScore.patients=rosmap.pheno[rosmap.pheno$CERADScore==1,]
-
-CERADScore.patients.ge=rosmap.ge[,colnames(rosmap.ge) %in% c(CERADScore.patients$Patient,"geneName")]
-
-CERADScore.patients.ge.labels=CERADScore.patients.ge[CERADScore.patients.ge$geneName %in% labels,]
-tmp=scale(CERADScore.patients.ge.labels[,-1])
-rownames(tmp)=CERADScore.patients.ge.labels$geneName
-CERADScore.patients.ge.labels=as.data.frame(tmp)
-
-colnames(CERADScore.patients.ge.labels)=paste("X",colnames(CERADScore.patients.ge.labels),sep="")
-
-
-CERADScore.patients.ge.labels$Class=ifelse(rownames(CERADScore.patients.ge.labels)%in% positives,1,-1)
-
-data.cerad=CERADScore.patients.ge.labels
+#add labels for braak
+braak.train=features
+braak.train=features[rownames(braak.train) %in% patients.braak.pos |rownames(braak.train) %in% patients.braak.neg, ]
+braak.train$Class=ifelse(rownames(braak.train) %in% patients.braak.pos,"yes","no")
 
 
 
@@ -81,7 +81,7 @@ train_and_validate = function( data, fold, C) #returns average balanced acc and 
 }
 
 # Function for doing a k-fold cross-validation for each C in CC
-cv = function(data, k, CC, seed = 123)
+cv = function(data, k, CC)
 {
   # For each value of the hyperparameter C ...
   auc = lapply(CC, function(C)
@@ -99,35 +99,24 @@ cv = function(data, k, CC, seed = 123)
 }
 
 k=5
-  auc.cerad = cv(
-    data = data.cerad,
-    k = k,
-    CC=10,
-    seed = 123
-  )
+mtry=1
+  auc.cerad = cv(data = cerad.train,k = k,C=mtry)
 
-  auc.cogdx = cv(
-    data = data.cogdx,
-    k = k,
-    CC=10,
-    seed = 123
-  )
+  auc.cogdx = cv(data = cogdx.train,k = k,C=mtry)
 
-  auc.rand = cv(
-    data = transform( data.cogdx, Class = sample(Class)),
-    k = k,
-    CC=10,
-    seed = 123
-  )
+  auc.braak = cv(data = braak.train,k = k,C=mtry)
+
+  auc.rand = cv(data = transform( braak.train, Class = sample(Class)),k = k,C=mtry)
 
 
   auc=append(auc.cerad,auc.cogdx)
+  auc=append(auc,auc.braak)
   auc=append(auc,auc.rand)
-  names(auc)=c("cerad","cogdx","random")
+  names(auc)=c("cerad","cogdx","braak","random")
   df=melt(do.call(rbind,auc))
 
   p.pheno.acc.boxplot=ggplot(df,aes(x=Var1,y=value)) +
     geom_boxplot(notch=FALSE)+
     labs(y="Balanced accuracy in predicting \n known AD phenotyes",x="Phenotypes")+
    theme_bw(base_size=12)+theme(legend.position="top")
-  ggsave(p.pheno.acc.boxplot,filename="Figures/p.pheno.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
+  #ggsave(p.pheno.acc.boxplot,filename="Figures/p.pheno.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")

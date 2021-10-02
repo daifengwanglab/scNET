@@ -12,6 +12,7 @@ cent.mat.scaled=apply(cent.mat, MARGIN = 2, FUN = function(X) (X - min(X))/diff(
 
 #GO enrichment analysis
 GOdata=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+
 genesets=GOdata$genesets
 names(genesets)=GOdata$geneset.descriptions
 
@@ -48,10 +49,13 @@ for(i in 1:length(celltypes))
 
 data=diff.cent.enrich.tbl
 data$label=gsub("_"," ",data$label)
+data$logfdr=-log10(data$fdr)
+data=data[data$logfdr > 2,]
 p.GO.degreeIn.diffCent=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size=-log10(fdr))) +
 labs(x="cell type",y="Biological process")+ggtitle(expression(Delta ~ "In degree" ))+
-theme(text = element_text(size = 10)) +
-theme_bw(base_size=12)
+theme(text = element_text(size = 10))+
+theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))
+
 pdf(file="Figures/p.GO.degreeIn.diffCent.pdf")
 p.GO.degreeIn.diffCent
 dev.off()

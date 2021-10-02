@@ -1,4 +1,3 @@
-
 library(dplyr)
 library(Loregic)
  library(dplyr)
@@ -9,12 +8,12 @@ library(data.table)
 
 #/ua/cgupta8/scGRN/MIT_AD_analysis/motifs
 
-#args=c("~/scGRN/MIT_AD_analysis/motifs/Mic.AD_MEMBERS.txt","~/scGRN/MIT_AD_analysis/motifs/Mic.AD.node_symbol-integar.key.txt",
-#"Mic","AD")
+args=c("~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt",
+"~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt", "Mic","AD",99)
 
-args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition #permut_for_loregic
+#args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition #permut_for_loregic
 
-data=read.table(args[1],skip=5, header=F)
+data=read.table(args[1],header=F,skip=5)
 ids=read.table(args[2],header=T)
 ct=args[3]
 cond=args[4]

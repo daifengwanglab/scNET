@@ -7,7 +7,7 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #fig 1c in https://www.nature.com/articles/s41467-019-10591-5/figures/1
 
 #Read GO data
-data=GSA.read.gmt('~/work/scNET_manuscript/genome/genesets/GO_annotations-9606-inferred-allev.gmt')
+data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_GO_bp_with_GO_iea_symbol.gmt')
 genesets=data$genesets
 names(genesets)=data$geneset.descriptions
 
@@ -52,6 +52,7 @@ for (i in 1:length(list))
 density.no.Modules.perturbed=data.frame(cell=NULL,pos=NULL,neg=NULL)
 Modules.df=data.frame(Modulename=NULL,cell=NULL)
 
+#calculate edge density per module for ctrl nets
 list=Filter(function(x) !any(grepl("AD", x)), list)
 for(i in 1:length(list))
 {

@@ -33,10 +33,14 @@ setwd(home_dir)
 #filter rubbish zscores
 motif_count.tbl$zscore=ifelse(motif_count.tbl$zscore == 888888.00,0,motif_count.tbl$zscore)
 
-p=ggplot(motif_count.tbl,aes(x=as.character(mID),y=zscore,fill=cond))+geom_bar(stat="identity",position="dodge")+facet_wrap(~ct,ncol=1)
+p=ggplot(motif_count.tbl,aes(x=as.character(mID),y=zscore,fill=cond))+
+geom_bar(stat="identity",position="dodge")+facet_wrap(~ct,ncol=1)+
+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
+theme_bw(base_size=12) + labs(y="Z score",x="3-node Motifs")+
+theme(axis.text.x=element_text(angle=90))+theme(legend.position = "top")
 
-ggsave(p,filename="Figures/p.motifs.fullnets.pdf", device="pdf",width=4,height=6,units="in")
+ggsave(p,filename="Figures/p.motifs.TF-nets.pdf", device="pdf",width=4,height=6,units="in")
 
 
 #for full nets
-ggsave(p,filename="Figures/p.motifs.fullnets.pdf", device="pdf",width=4,height=6,units="in")
+#ggsave(p,filename="Figures/p.motifs.fullnets.pdf", device="pdf",width=4,height=6,units="in")

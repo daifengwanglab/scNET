@@ -17,6 +17,9 @@ name=paste(datadir,cellname,sep="/")
 loregicOut=read.table(name, header=T, sep="\t")
 colnames(loregicOut)=c("T=0","AND","RF1*~RF2","~RF1*RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1","TF1","TF2","TF.target","pvalue")
 
+#colnames(mat)=c("T=0","AND","RF1*~RF2","RF1","~RF1*RF2","RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1")
+
+
 tmp=loregicOut %>% unite(x, c(TF1,TF2,TF.target), sep="_")
 rownames(tmp)=tmp$x
 tmp$x=NULL
@@ -28,19 +31,23 @@ assign(name, tmp)
 }
 
 
- df=rbind(Ex.AD.logics.txt,In.AD.logics.txt)
- df=rbind(df,Mic.AD.logics.txt)
- df=rbind(df,Oli.AD.logics.txt)
+ df=rbind(Ex.AD.ffl_logics.pval_lt_pt1,In.AD.ffl_logics.pval_lt_pt1)
+ df=rbind(df,Mic.AD.ffl_logics.pval_lt_pt1)
+ df=rbind(df,Oli.AD.ffl_logics.pval_lt_pt1)
 
- df2=rbind(Ex.Ctrl.logics.txt,In.Ctrl.logics.txt)
- df2=rbind(df2,Mic.Ctrl.logics.txt)
- df2=rbind(df2,Oli.Ctrl.logics.txt)
+ df2=rbind(Ex.Ctrl.ffl_logics.pval_lt_pt1,In.Ctrl.ffl_logics.pval_lt_pt1)
+ df2=rbind(df2,Mic.Ctrl.ffl_logics.pval_lt_pt1)
+ df2=rbind(df2,Oli.Ctrl.ffl_logics.pval_lt_pt1)
 
  df=rbind(df,df2)
-df$state=ifelse(df$cell %like% "AD","AD","Ctrl")
-df$cell=gsub("\\.AD","",df$cell)
-df$cell=gsub("\\.Ctrl","",df$cell)
- p=ggplot(df,aes(x=gate,y=Count,fill=state))+geom_bar(stat="identity",position="dodge")+facet_wrap(~cell,ncol=1)+
- theme(axis.text.x=element_text(angle=90))
+ df=melt(df)
+df$condition=ifelse(df$ct %like% "AD","AD","Ctrl")
+df$ct=gsub("\\.AD","",df$ct)
+df$ct=gsub("\\.Ctrl","",df$ct)
+ p=ggplot(df,aes(x=as.character(variable),fill=condition))+
+ geom_bar(stat="identity")+facet_wrap(~ct,ncol=1)+
+ scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
+ theme_bw(base_size=12) + labs(y="Count",x="logic gates")+
+ theme(axis.text.x=element_text(angle=90))+theme(legend.position = "top")
 
  ggsave(p,filename="Figures/p.logics.pdf", device="pdf",width=3,height=3,units="in")

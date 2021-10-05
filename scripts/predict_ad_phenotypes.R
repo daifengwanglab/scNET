@@ -29,7 +29,7 @@ features=t(features)
 features=as.data.frame(scale(features))
 
 #phenotypes
-rosmap.pheno=read.table("~/Desktop/1_AlzheimersDLPFCPhenotypesUpdatedForSaniya.csv", sep=",", header=T, )
+rosmap.pheno=read.table("~/Desktop/AlzheimersDLPFCPhenotypesUpdatedForSaniya.csv", sep=",", header=T, )
 
 #cerad
 patients.cerad.pos=rosmap.pheno[rosmap.pheno$CERADScore==1,]$Patient
@@ -100,23 +100,46 @@ cv = function(data, k, CC)
 
 k=5
 mtry=1
-  auc.cerad = cv(data = cerad.train,k = k,C=mtry)
+
+for(j in 1:10)
+{
+  auc.cerad = cv(data = cerad.train, k = 5,C=mtry)
+  name=paste("auc.cerad",j,sep="_")
+  assign(name,auc.cerad)
 
   auc.cogdx = cv(data = cogdx.train,k = k,C=mtry)
+  name=paste("auc.cogdx",j,sep="_")
+  assign(name,auc.cogdx)
 
   auc.braak = cv(data = braak.train,k = k,C=mtry)
+  name=paste("auc.braak",j,sep="_")
+  assign(name,auc.braak)
 
-  auc.rand = cv(data = transform( braak.train, Class = sample(Class)),k = k,C=mtry)
+  auc.random = cv(data = transform( braak.train, Class = sample(Class)),k = k,C=mtry)
+  name=paste("auc.random",j,sep="_")
+  assign(name,auc.random)
+
+}
+
+phenotypes=c("auc.cerad","auc.cogdx","auc.braak","auc.random")
+acc.tbl=data.frame(acc=NULL,pheno=NULL,cond=NULL)
+for (i in 1:length(phenotypes))
+{
+    pattern=paste(phenotypes[i],"_*",sep="")
+    list=ls(pattern=pattern)
+    for(j in 1:length(list))
+    {
+      df=as.data.frame(unlist(get(list[j])))
+      colnames(df)="acc"
+      df$pheno=phenotypes[i]
+      acc.tbl=rbind(acc.tbl,df)
+    }
+}
 
 
-  auc=append(auc.cerad,auc.cogdx)
-  auc=append(auc,auc.braak)
-  auc=append(auc,auc.rand)
-  names(auc)=c("cerad","cogdx","braak","random")
-  df=melt(do.call(rbind,auc))
-
-  p.pheno.acc.boxplot=ggplot(df,aes(x=Var1,y=value)) +
-    geom_boxplot(notch=FALSE)+
-    labs(y="Balanced accuracy in predicting \n known AD phenotyes",x="Phenotypes")+
+acc.tbl$pheno=gsub("auc.","",acc.tbl$pheno)
+  p.pheno.acc.boxplot=ggplot(acc.tbl,aes(x=pheno,y=acc)) +
+    geom_boxplot(notch=TRUE)+
+    labs(y="Balanced accuracy in predicting \n AD phenotyes",x="Phenotypes")+
    theme_bw(base_size=12)+theme(legend.position="top")
-  #ggsave(p.pheno.acc.boxplot,filename="Figures/p.pheno.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
+  ggsave(p.pheno.acc.boxplot,filename="Figures/p.pheno.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")

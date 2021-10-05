@@ -8,10 +8,10 @@ library(data.table)
 
 #/ua/cgupta8/scGRN/MIT_AD_analysis/motifs
 
-args=c("~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt",
-"~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt", "Mic","AD",99)
+#args=c("~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt",
+#"~/scGRN/MIT_AD_analysis/motifs/1000_rands_with_100_sampling/FFL_members_full_list/Ex.AD_MEMBERS.txt", "Mic","AD",99)
 
-#args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition #permut_for_loregic
+args = commandArgs(trailingOnly=TRUE) #FFL_file #idmap_file celltype condition #permut_for_loregic
 
 data=read.table(args[1],header=F,skip=5)
 ids=read.table(args[2],header=T)
@@ -89,7 +89,7 @@ loregicOut = ct.loregic.out
 rownames(loregicOut)=paste(loregicOut$RF1,loregicOut$RF2,loregicOut$target,sep="_")
 loregicOut=loregicOut[,-c(1:3)]
 mat=loregicOut[apply(loregicOut[,], 1, function(x) !all(x==0)),] # remove gates with no scores
-#colnames(mat)=c("T=0","AND","RF1*~RF2","RF1","~RF1*RF2","RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1")
+colnames(mat)=c("T=0","AND","RF1*~RF2","RF1","~RF1*RF2","RF2","XOR","OR","NOR","XNOR","~RF2","RF1+~RF2","~RF1","~RF1+RF2","NAND","T=1")
 
 l=apply(mat,1,function(x) which(x==max(x))) #store max of each row in a list
 
@@ -109,7 +109,7 @@ for(i in 1:length(l))
 DF=DF[-1,] #stores all gate consistent triplets
 tmp=DF
 tmp$triplet=rownames(tmp)
-tmp=tmp %>% separate(triplet, c("RF1","RF2","target"),sep="_")
+tmp=tmp %>% separate(triplet, c("TF1","TF2","target"),sep="_")
 rownames(tmp)=c()
 gate_consistent_trips=tmp
 
@@ -132,13 +132,13 @@ pvalues=data.frame(matrix(ncol=2,nrow=1))
 colnames(pvalues)=c("pvalue","qvalue")
 
 
-print("nrow(gate_consistent_trips)")
+print(nrow(gate_consistent_trips))
 for(i in 1:nrow(gate_consistent_trips))
 {
     print (paste("triplet:",i))
     count=1
-    trip.gate=colnames(gate_consistent_trips[,1:14])[max.col(gate_consistent_trips[i,1:14])]
-    trip=gate_consistent_trips[i,c("RF1","RF2","target")]
+    trip.gate=colnames(gate_consistent_trips[,1:16])[max.col(gate_consistent_trips[i,1:16])]
+    trip=gate_consistent_trips[i,c("TF1","TF2","target")]
     for(j in 1:npermut)
     {
       rand.target=targets[[sample(1:length(targets), 1)]]

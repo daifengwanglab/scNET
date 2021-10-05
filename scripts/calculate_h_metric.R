@@ -1,5 +1,5 @@
 
-
+rm(list=ls())
 source('~/work/scNET-devel/scripts/load_libraries.R')
 source('~/work/scNET-devel/scripts/read_data.R')
 source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
@@ -98,6 +98,8 @@ celltypes=c("Mic","Oli","Ex","In")
   mic.df[order(-mic.df$change),]
 
   #https://ggrepel.slowkow.com/articles/examples.html
+  npgcolors=pal_npg("nrc", alpha = 1)(10)
+
   p.mic.scatter=ggplot(mic.df,aes(x=Ctrl.Mic.h,y=AD.Mic.h,label=ifelse(mic.df$change >0.075, mic.df$gene, "")))+
   geom_point(color = "black",alpha=0.5) +
     geom_text_repel(
@@ -110,7 +112,7 @@ celltypes=c("Mic","Oli","Ex","In")
      theme(legend.position = "none")+labs(x="hierarchy height control",y="hierarchy height AD")+
      theme(text = element_text(size = 10)) +
      theme_bw(base_size=12)+ggtitle("Miroglia")
-ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,width=3)
+#ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=3,width=3)
 
 
   p.rand.all.ct.h.dist=ggplot(rand.all.cts.dist, aes(x=h))+geom_histogram()+
@@ -121,7 +123,7 @@ ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,wi
   theme(text = element_text(size = 10)) +
   theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))
 
-  ggsave(p.rand.all.ct.h.dist,file="Figures/p.rand.all.ct.h.dist.pdf", device="pdf",height=4,width=2.5,units="in")
+  #ggsave(p.rand.all.ct.h.dist,file="Figures/p.rand.all.ct.h.dist.pdf", device="pdf",height=3,width=2.5,units="in")
 
 
   p.AD.all.ct.h.dist=ggplot(AD.all.cts.dist, aes(x=h))+geom_histogram()+
@@ -131,7 +133,7 @@ ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,wi
   annotate("rect",xmin=0.33,xmax=1,ymin=-0,ymax=Inf, alpha=0.2, fill="blue")+
   theme(text = element_text(size = 10)) +
   theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))
-  ggsave(p.AD.all.ct.h.dist,file="Figures/p.AD.all.ct.h.dist.pdf", device="pdf",height=4,width=2.5,units="in")
+  #ggsave(p.AD.all.ct.h.dist,file="Figures/p.AD.all.ct.h.dist.pdf", device="pdf",height=3,width=2.5,units="in")
 
 
   p.Ctrl.all.ct.h.dist=ggplot(Ctrl.all.cts.dist, aes(x=h))+geom_histogram()+
@@ -142,14 +144,18 @@ ggsave(p.mic.scatter,file="Figures/p.mic.hei.scatter.pdf",device=pdf,height=4,wi
   theme(text = element_text(size = 10)) +
   theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))
 
-ggsave(p.Ctrl.all.ct.h.dist,file="Figures/p.Ctrl.all.ct.h.dist.pdf", device="pdf",height=4,width=2.5,units="in")
+#ggsave(p.Ctrl.all.ct.h.dist,file="Figures/p.Ctrl.all.ct.h.dist.pdf", device="pdf",height=3,width=2.5,units="in")
 
 ############
 
-#TF net sankey
-meanFCTbl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
-no.of.enh.tbl=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
+#TF hei attr and sankey
+meanFCTblAD=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
+no.of.enh.tbl.AD=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
+meanFCTblCtrl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
+no.of.enh.tbl.Ctrl=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
+
 meanRWscore.tbl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
+
 for (i in 1:length(celltypes))
 {
     pattern=paste(celltypes[i],"hie.ht",sep=".")
@@ -165,23 +171,27 @@ for (i in 1:length(celltypes))
     df.deg.hei=merge(ct.deg,df,by="gene")
     df.deg.hei$AD = cut(df.deg.hei[,3],c(-Inf,-0.33,0.33,1),labels=c("Bottom","Middle","Top"))
     df.deg.hei$Control = cut(df.deg.hei[,4],c(-Inf,-0.33,0.33,1),labels=c("Bottom","Middle","Top"))
+
+    #AD networks fold change
     Topmean=mean(df.deg.hei$FC[df.deg.hei$AD=="Top"])
     Middlemean=mean(df.deg.hei$FC[df.deg.hei$AD=="Middle"])
     Bottomean=mean(df.deg.hei$FC[df.deg.hei$AD=="Bottom"])
     fctbl=data.frame(Cell=celltypes[i],Top=Topmean,Middle=Middlemean,Bottom=Bottomean)
-    meanFCTbl=rbind(meanFCTbl,fctbl)
+    meanFCTblAD=rbind(meanFCTblAD,fctbl)
+
+
+    #For full network
     network.name=paste("AD",celltypes[i],sep=".")
     network.name=paste(network.name,"network",sep=".")
     net=get(network.name)
 
-    ### AD networks
     genes=df.deg.hei[df.deg.hei$AD=="Top",]$gene
     genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
     TopNprom=length(unique(genes.prom$promoter))/length(unique(genes.prom$TF))
     genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
     TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
     tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Top",totalTF=length(unique(genes)))
-    no.of.enh.tbl=rbind(no.of.enh.tbl,tbl)
+    no.of.enh.tbl.AD=rbind(no.of.enh.tbl.AD,tbl)
 
     genes=df.deg.hei[df.deg.hei$AD=="Middle",]$gene
     genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
@@ -189,7 +199,7 @@ for (i in 1:length(celltypes))
     genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
     TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
     tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Middle",totalTF=length(unique(genes)))
-    no.of.enh.tbl=rbind(no.of.enh.tbl,tbl)
+    no.of.enh.tbl.AD=rbind(no.of.enh.tbl.AD,tbl)
 
     genes=df.deg.hei[df.deg.hei$AD=="Bottom",]$gene
     genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
@@ -197,7 +207,43 @@ for (i in 1:length(celltypes))
     genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
     TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
     tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Bottom",totalTF=length(unique(genes)))
-    no.of.enh.tbl=rbind(no.of.enh.tbl,tbl)
+    no.of.enh.tbl.AD=rbind(no.of.enh.tbl.AD,tbl)
+
+
+    #Ctrl networks fold change
+    Topmean=mean(df.deg.hei$FC[df.deg.hei$Control=="Top"])
+    Middlemean=mean(df.deg.hei$FC[df.deg.hei$Control=="Middle"])
+    Bottomean=mean(df.deg.hei$FC[df.deg.hei$Control=="Bottom"])
+    fctbl=data.frame(Cell=celltypes[i],Top=Topmean,Middle=Middlemean,Bottom=Bottomean)
+    meanFCTblCtrl=rbind(meanFCTblCtrl,fctbl)
+
+    network.name=paste("Ctrl",celltypes[i],sep=".")
+    network.name=paste(network.name,"network",sep=".")
+    net=get(network.name)
+
+    genes=df.deg.hei[df.deg.hei$Control=="Top",]$gene
+    genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
+    TopNprom=length(unique(genes.prom$promoter))/length(unique(genes.prom$TF))
+    genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
+    TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
+    tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Top",totalTF=length(unique(genes)))
+    no.of.enh.tbl.Ctrl=rbind(no.of.enh.tbl.Ctrl,tbl)
+
+    genes=df.deg.hei[df.deg.hei$Control=="Middle",]$gene
+    genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
+    TopNprom=length(unique(genes.prom$promoter))/length(unique(genes.prom$TF))
+    genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
+    TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
+    tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Middle",totalTF=length(unique(genes)))
+    no.of.enh.tbl.Ctrl=rbind(no.of.enh.tbl.Ctrl,tbl)
+
+    genes=df.deg.hei[df.deg.hei$Control=="Bottom",]$gene
+    genes.prom=net[net$TF %in% genes & net$TFbs=='promoter',]
+    TopNprom=length(unique(genes.prom$promoter))/length(unique(genes.prom$TF))
+    genes.enh=net[net$TF %in% genes & net$TFbs=='enhancer',]
+    TopNenh=length(unique(genes.enh$enhancer))/length(unique(genes.enh$TF))
+    tbl=data.frame(Cell=celltypes[i],Promoter=TopNprom,Enhancer=TopNenh, Level="Bottom",totalTF=length(unique(genes)))
+    no.of.enh.tbl.Ctrl=rbind(no.of.enh.tbl.Ctrl,tbl)
 
 
     #rewiring
@@ -246,7 +292,7 @@ for (i in 1:length(celltypes))
     name=paste(name,".sankey.TFNet",sep="")
     name=paste(name,"pdf",sep=".")
     name=paste("Figures",name,sep="/")
-    ggsave(p,filename=name, device="pdf", height=2,width=2,units="in" )
+  #  ggsave(p,filename=name, device="pdf", height=2,width=2,units="in" )
 }
 
 
@@ -257,41 +303,73 @@ p.rewiring=ggplot(plotData,aes(color=Cell, y=value, x=reorder(variable))) +
   coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
  theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.rewiring,filename="Figures/p.rewiring.pdf", device="pdf",width=2.5,height=3,units="in")
+#ggsave(p.rewiring,filename="Figures/p.rewiring.pdf", device="pdf",width=3,height=2,units="in")
 
 
-plotData=melt(meanFCTbl)
+plotData=melt(meanFCTblCtrl)
 p.foldchange=ggplot(plotData,aes(color=Cell,size=2, y=value, x=reorder(variable))) +
-geom_point(size=2)+ labs(y="fold\nchange",x="Levels")+
+geom_point(size=2)+ labs(y="Average fold change\nAD pathology vs no pathology",x="Levels")+
 coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
   theme_bw(base_size=12) +
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
 
-ggsave(p.foldchange,filename="Figures/p.foldchange.pdf", device="pdf",width=2.5,height=3,units="in")
+#ggsave(p.foldchange,filename="Figures/p.foldchange.Ctrl.pdf", device="pdf",width=3,height=2,units="in")
+
+plotData=melt(meanFCTblAD)
+p.foldchange=ggplot(plotData,aes(color=Cell,size=2, y=value, x=reorder(variable))) +
+geom_point(size=2)+ labs(y="Average fold change\nAD pathology vs no pathology",x="Levels")+
+coord_flip()+
+  scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
+  theme_bw(base_size=12) +
+  theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
+
+#ggsave(p.foldchange,filename="Figures/p.foldchange.AD.pdf", device="pdf",width=3,height=2,units="in")
 
 
-p.promoter=ggplot(no.of.enh.tbl,aes(color=Cell, y=Promoter, x=Level)) +
-  geom_point(size=2)+ labs(y="# of \n promoters targeted",x="Levels")+
+
+p.promoter=ggplot(no.of.enh.tbl.AD,aes(color=Cell, y=Promoter, x=Level)) +
+  geom_point(size=2)+ labs(y="Average # of \n promoters targeted",x="Levels")+
   coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4])) +
   theme_bw(base_size=12) +
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.promoter,filename="Figures/p.promoter.pdf", device="pdf",width=2.7,height=3,units="in" )
+#ggsave(p.promoter,filename="Figures/p.promoter.AD.pdf", device="pdf",width=2.7,height=2,units="in" )
 
-p.enhancer=ggplot(no.of.enh.tbl,aes(color=Cell, y=Enhancer, x=Level)) +
+
+p.promoter=ggplot(no.of.enh.tbl.Ctrl,aes(color=Cell, y=Promoter, x=Level)) +
+  geom_point(size=2)+ labs(y="Average # of \n promoters targeted",x="Levels")+
+  coord_flip()+
+  scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4])) +
+  theme_bw(base_size=12) +
+  theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
+#ggsave(p.promoter,filename="Figures/p.promoter.Ctrl.pdf", device="pdf",width=2.7,height=2,units="in" )
+
+
+
+p.enhancer=ggplot(no.of.enh.tbl.AD,aes(color=Cell, y=Enhancer, x=Level)) +
   geom_point(size=2)+
   coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
-  theme_bw(base_size=12) + labs(y="# of \n enhancers targeted",x="Levels")+
+  theme_bw(base_size=12) + labs(y="Average # of \n enhancers targeted",x="Levels")+
   theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
-ggsave(p.enhancer,filename="Figures/p.enhancer.pdf", device="pdf",width=2.7,height=3,units="in" )
+#ggsave(p.enhancer,filename="Figures/p.enhancer.AD.pdf", device="pdf",width=2.7,height=2,units="in" )
+
+
+p.enhancer=ggplot(no.of.enh.tbl.Ctrl,aes(color=Cell, y=Enhancer, x=Level)) +
+  geom_point(size=2)+
+  coord_flip()+
+  scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
+  theme_bw(base_size=12) + labs(y="Average # of \n enhancers targeted",x="Levels")+
+  theme(axis.text.x=element_text(angle=90))+theme(legend.position = "none")
+#ggsave(p.enhancer,filename="Figures/p.enhancer.Ctrl.pdf", device="pdf",width=2.7,height=2,units="in" )
+
 
 #legend
-p.ct.legend=ggplot(no.of.enh.tbl,aes(color=Cell, y=Enhancer, x=Level)) +
+p.ct.legend=ggplot(no.of.enh.tbl.AD,aes(color=Cell, y=Enhancer, x=Level)) +
   geom_point(size=2)+
   coord_flip()+
   scale_color_manual(values=c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]))+
   theme_bw(base_size=12) + labs(y="Average # of enhancers targeted",x="Levels")+
-  theme(axis.text.x=element_text(angle=90))
-ggsave(p.ct.legend,filename="Figures/p.ct.legend.pdf", device="pdf",width=3.2,height=3,units="in" )
+  theme(axis.text.x=element_text(angle=90))+labs(color = "Cell type")
+#ggsave(p.ct.legend,filename="Figures/p.ct.legend.pdf", device="pdf",width=3.2,height=3,units="in" )

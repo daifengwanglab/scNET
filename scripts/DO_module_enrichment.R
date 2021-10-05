@@ -44,6 +44,7 @@ for (i in 1:length(list))
   }
   module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
 }
+GO.diff.cent.enrich.tbl=diff.cent.enrich.tbl
 
 #DO
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,

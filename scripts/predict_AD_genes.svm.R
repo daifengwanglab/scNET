@@ -120,7 +120,7 @@ for(i in 1:length(nets))
   colnames(data)=gsub("-","_",colnames(data))
 
   #mtry=c("7","10","20","50","100")
-  for(j in 1:1)
+  for(j in 1:10)
   {
     auc = cv(data = data, k = 5,mtry=1)
     name=paste(celltype,"auc",sep=".")
@@ -157,10 +157,11 @@ for (i in 1:length(celltypes))
 acc.tbl$ct=gsub(".auc","",acc.tbl$ct)
 acc.tbl$ct=gsub("AD.","",gsub("Ctrl.","",acc.tbl$ct))
 
+npgcolors=pal_npg("nrc", alpha = 1)(10)
 p.adgenes.acc.boxplot=ggplot(acc.tbl,aes(x=ct,y=acc,fill=cond)) +
   geom_boxplot(notch=TRUE)+
   labs(y="Balanced accuracy in predicting \n known AD genes \n Repeated 5 fold CV",x="Cell type networks")+
- theme_bw(base_size=12)+theme(legend.position="top")
+ theme_bw(base_size=12)+theme(legend.position="top")+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))
 ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 

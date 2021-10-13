@@ -194,14 +194,14 @@ calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
 }
 
 
-detect_modules = function(matrix)
+detect_modules = function(matrix, msize)
 {
  #ref: http://pklab.med.harvard.edu/scw2014/WGCNA.html	#ref:
 
 	dissMatrix = 1 - matrix
 	# Call the hierarchical clustering function
 	geneTree = flashClust(as.dist(dissMatrix),method="average");
-	minModuleSize = 10;
+	minModuleSize = msize;
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
 	dynamicColors = labels2colors(dynamicMods)

@@ -36,7 +36,7 @@ celltypes=c("Mic","Oli","Ex","In")
     colnames(df)=c("gene",newhcolname)
     assign(name,df)
     pcounter=0
-    for (j in 1:100)
+    for (j in 1:10) #original data is for 1000 runs; this is just trial
     {
       TF.net.rand=erdos.renyi.game(length(V(TF.net.igraph)),length(E(TF.net.igraph)), type="gnm",directed = TRUE)
       TF.net.rand.df=as.data.frame(get.edgelist(TF.net.rand))
@@ -153,7 +153,7 @@ meanFCTblAD=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
 no.of.enh.tbl.AD=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
 meanFCTblCtrl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
 no.of.enh.tbl.Ctrl=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
-
+edge_density_tbl=data.frame(Cell=NULL,edensity=NULL, Level=NULL)
 meanRWscore.tbl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
 
 for (i in 1:length(celltypes))

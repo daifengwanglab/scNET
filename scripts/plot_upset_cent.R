@@ -28,7 +28,7 @@ c= c[as.logical(rowSums(c != 0)), ]
 colnames(c)=gsub(".betweenness.topCent","",colnames(c))
 colnames(c)=gsub("\\."," ",colnames(c))
 p.bet=upset(
-            as.data.frame(c), colnames(c), width_ratio=0.1,name='Betweenness',min_size=4,
+            as.data.frame(c), colnames(c), width_ratio=0.1,name='Betweenness', min_size=4,
             sort_sets=FALSE,
             stripes=upset_stripes(
               geom=geom_segment(size=5),

@@ -9,10 +9,6 @@ source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 #Read GO data
 data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_GO_bp_with_GO_iea_symbol.gmt')
 
-
-#Read migsdb data
-#data=GSA.read.gmt('/Users/chiraggupta/work/scNET_manuscript/genome/genesets/BaderLab/Human_MSigdb_August_01_2021_symbol.gmt')
-
 genesets=data$genesets
 names(genesets)=data$geneset.descriptions
 
@@ -29,7 +25,7 @@ for(i in 1:length(nets))
   net=net[,c("TF","TG","abs_coef")]
   net=distinct(net)
   mat=find_target_pairs_matrix(net)
-  mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
+  #mat[mat < 0.1] <-0 #remove edges with less than 10% overlap
   for (j in 2:length(genesets))
   {
     gsname=names(genesets)[j]
@@ -109,10 +105,10 @@ df_to_plot=melt(density.no.BP.perturbed)
 npgcolors=pal_npg("nrc", alpha = 1)(10)
 p.no_density_GOBP=ggplot(df_to_plot,aes(x=cell,y=value)) +
   geom_col(aes(fill=variable),width=0.5)+
-  labs(y="# of pathways",x="Cell types")+
-  scale_fill_manual(values=c("pos"=npgcolors[5],"neg"=npgcolors[6]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
+  labs(y="# of GO BP",x="Cell types")+
+  scale_fill_manual(values=c("pos"=npgcolors[4],"neg"=npgcolors[8]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
-#ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
+ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
 
 
 #box plot

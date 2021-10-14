@@ -208,32 +208,29 @@ tmp=left_join(all.deg.earlylate,all.deg.no)
 tmp=left_join(tmp,all.deg.noearly)
 write.table(tmp,file="all.deg.MIT.FC.mat", col.names=TRUE, row.names=FALSE,sep="\t",quote=F)
 
+df=AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10
+write.table(df[as.character(df$moduleID) != "0",],file="AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10.genesets", col.names=FALSE, row.names=FALSE,sep="\t",quote=F)
 
-df=AAD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10
-allmodules=unique(df$moduleID)
-#remove module0
-allmodules= Filter(function(x) !any(grepl("0", x)), allmodules)
-Module.fc.tbl=data.frame("gene"=NULL,"FC"=NULL,"module"=NULL,"Pathology"=NULL)
-for (j in 1:length(allmodules))
-{
-    module=df[df$moduleID %in% allmodules[j],]$gene
-    module.de=all.deg.no[all.deg.no$gene %in% module,]
-    module.de$module=allmodules[j]
-    module.de$Pathology="no-pathology vs pathology"
-    Module.fc.tbl=rbind(Module.fc.tbl,module.de)
+#read enrichment results
+mat=read.table("all.deg.MIT.FC.mat-AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10.fdr-based.zscore.mat", header=T, row.names=1)
+mat=mat[,-c(1:2)]
+rownames(mat)=paste("M",rownames(mat),sep="")
+colnames(mat)=c("early vs. late","no path.","no path. vs. early path.")
 
-    module.de=all.deg.noearly[all.deg.noearly$gene %in% module,]
-    module.de$module=allmodules[j]
-    module.de$Pathology="no-pathology vs early-pathology"
-    Module.fc.tbl=rbind(Module.fc.tbl,module.de)
+paletteLength=100
+myColor = colorRampPalette(c(npgcolors[8], "white", npgcolors[4]))(paletteLength)
+myBreaks <- c(seq(-10, 0, length.out=ceiling(paletteLength/2) + 1),
++ seq(max(as.matrix(mat))/paletteLength, 10, length.out=floor(paletteLength/2)))
 
-    module.de=all.deg.earlylate[all.deg.earlylate$gene %in% module,]
-    module.de$module=allmodules[j]
-    module.de$Pathology=" early-pathology vs late-pathology"
-    Module.fc.tbl=rbind(Module.fc.tbl,module.de)
-}
+pdf(file="Figures/p.module_FC_AD_Path.pdf")
+pheatmap(as.matrix(mat),cellwidth=12,cellheight=8,show_rownames=TRUE,
+ breaks=myBreaks,
+ col=myColor,
+ cluster_cols=F,
+ cluster_rows=T,
+ border_color = "grey60",
+ angle_col=c("45")
+ )
+dev.off()
 
-p.module_fc_boxplot=ggplot(Module.fc.tbl,aes(x=as.factor(module),y=FC)) + geom_boxplot()+
-  labs(y="change in GO edge density",x="Cell types")+facet_wrap(~Pathology, nrow=3)+
- theme_bw(base_size=12)+theme(legend.position="top")
-#ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_GOBP_boxplot.pdf", device="pdf",width=3,height=3,units="in")
+#GO

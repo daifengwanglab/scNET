@@ -8,43 +8,72 @@
 ###########################
 #GO enrichment
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,
-"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL)
+"overlap"=NULL,"background"=NULL,"hits"=NULL,"cell"=NULL,"module"=NULL,"th"=NULL,"msize"=NULL)
 
-module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL)
-#genesets <- msigdb_gsets("Homo sapiens", "C2", "CP:KEGG", clean=TRUE)
-
+module.enrich.tbl=data.frame("cell"=NULL,"total"=NULL,"annotated"=NULL, "th"=NULL,"msize"=NULL)
 
 list=ls(pattern="*\\.modules")
+list=Filter(function(x) !any(grepl("JI_0.5", x)), list)
+list=Filter(function(x) !any(grepl("JI_0.6", x)), list)
+list=Filter(function(x) !any(grepl("JI_0.7", x)), list)
+list=Filter(function(x) !any(grepl("JI_0.8", x)), list)
+list=Filter(function(x) !any(grepl("JI_0.9", x)), list)
+list=Filter(function(x) !any(grepl("Ctrl", x)), list)
+list=Filter(function(x) !any(grepl("Ex", x)), list)
+
+
 for (i in 1:length(list))
 {
   total=0
   annotated=0
   totalBP=0
-  name=list[i]
-  name=gsub(".network.JI.coreg.modules","",name)
   df=get(list[i])
+  df=df[as.character(df$moduleID) != "0",]
+  name=list[i]
+  name=gsub(".network.JI.coreg.modules.","",name)
+  name=gsub("JI_"," ",gsub(".ModSize_"," ",name))
+  th=sapply(strsplit(name, " "), head, 3)[2]
+  msize=sapply(strsplit(name, " "), head, 3)[3]
+  name=sapply(strsplit(name, " "), head, 3)[1]
+  ct=ifelse(name %like% "Ex","Ex",ifelse(name %like% "In","In",ifelse(name %like% "Mic","Mic","Oli")))
+  cond=ifelse(name %like% "AD","AD","Ctrl")
   modnames=unique(factor(df$moduleID))
 #  universe=df$gene
   total=length(modnames)
-  print(paste(name,length(modnames),sep=":"))
-  for (j in 1:length(modnames))
+  message=paste(name,total,sep=":")
+  message=paste(message,th,sep=":")
+  message=paste(message,msize,sep=":")
+  print (message)
+  if (total > 0)
   {
-    mod.genes=df[df$moduleID %in% modnames[j],]$gene
-    hyp_obj = hypeR(mod.genes, genesets,fdr=0.01)
-    hyp_df =  hyp_obj$data
-    if(nrow(hyp_df) > 0)
+    for (j in 1:length(modnames))
     {
-      annotated=annotated+1
-      print(paste(modnames[j],nrow(hyp_df),sep=":"))
-      hyp_df$cell=name
-      hyp_df$module=modnames[j]
+      mod.genes=df[df$moduleID %in% modnames[j],]$gene
+      hyp_obj = hypeR(mod.genes, genesets,fdr=0.05)
+      hyp_df =  hyp_obj$data
+      if(nrow(hyp_df) > 0)
+      {
+        annotated=annotated+1
+        message=paste(name,modnames[j],sep="_ModName:")
+        message=paste(message,nrow(hyp_df),sep="_totBP:")
+        print (message)
+        hyp_df$cell=name
+        hyp_df$module=modnames[j]
+        hyp_df$th=th
+        hyp_df$msize=msize
+      }
+      diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
+      newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated,"th"=th,"msize"=msize)
     }
-    diff.cent.enrich.tbl=rbind(diff.cent.enrich.tbl,  hyp_df)
-    newtbl=data.frame("cell"=name,"total"=total,"annotated"=annotated)
+    module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
   }
-  module.enrich.tbl=rbind(module.enrich.tbl,newtbl)
 }
 GO.diff.cent.enrich.tbl=diff.cent.enrich.tbl
+
+
+
+
+
 
 #DO
 diff.cent.enrich.tbl=data.frame("label"=NULL,"pval"=NULL,"fdr"=NULL,"signature"=NULL,"geneset"=NULL,

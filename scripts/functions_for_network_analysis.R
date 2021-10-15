@@ -309,3 +309,38 @@ geom_point(color = dplyr::case_when(d$lfc > th ~ npgcolors[3],
 						 theme_bw(base_size=12)
 p
 }
+
+
+train_and_validate = function( data, fold, C) #returns average balanced acc and feat, imp. scores for each fold
+{
+  fit = randomForest(formula= as.factor(Class) ~ ., data = data[-fold,],importance=TRUE)
+  # Predict the fold
+  yh = predict(fit, newdata = data[fold,])
+
+  # Compare the predictions to the labels
+  #posneg = split(yh, data$Class[fold])
+
+  # Return the AUC under the ROC
+  #roc.curve(posneg[[1]], posneg[[2]])$auc
+  conf.mat=caret::confusionMatrix(yh, as.factor(data[fold,]$Class))
+  acc=conf.mat$byClass['Balanced Accuracy']
+  acc
+}
+
+# Function for doing a k-fold cross-validation for each C in CC
+cv = function(data, k, CC)
+{
+  # For each value of the hyperparameter C ...
+  auc = lapply(CC, function(C)
+  {
+    folds <- createFolds(data$Class, k = k)
+
+    # For each fold ...
+    sapply(folds, function(fold)
+    {
+      # Train an SVM, and validate on the fold
+      train_and_validate(data,fold,C)
+    })#end sapply
+  })#end lapply
+  auc
+}

@@ -18,8 +18,6 @@ list=Filter(function(x) !any(grepl("JI_0.6", x)), list)
 list=Filter(function(x) !any(grepl("JI_0.7", x)), list)
 list=Filter(function(x) !any(grepl("JI_0.8", x)), list)
 list=Filter(function(x) !any(grepl("JI_0.9", x)), list)
-list=Filter(function(x) !any(grepl("Ctrl", x)), list)
-list=Filter(function(x) !any(grepl("Ex", x)), list)
 
 
 for (i in 1:length(list))
@@ -70,7 +68,20 @@ for (i in 1:length(list))
 }
 GO.diff.cent.enrich.tbl=diff.cent.enrich.tbl
 
+p1=ggplot(module.enrich.tbl,aes(x=cell,y=Nmodules,fill=cond))+
+geom_bar(stat="identity",position="dodge")+facet_grid(th~as.numeric(msize))+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
+theme_bw(base_size=12) + labs(y="# of co-regulation modules",x="cell types")+
+theme(legend.position = "top")+theme(axis.text.x=element_text(angle=90))
 
+ p2=ggplot(module_gene_count.tbl,aes(x=celltype,y=Ngenes))+
+ geom_point(aes(colour=factor(cond),
+      fill = factor(cond)), shape=21, size = 0.4)+
+ scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
+ facet_grid(th~as.numeric(msize)) +
+ theme_bw(base_size=12) + labs(y="# genes",x="cell types")+
+ theme(legend.position = "top")+theme(axis.text.x=element_text(angle=90))
+
+ggsave(p1,filename="Figures/p.no_mods_per_ct.pdf", device="pdf",width=6,height=6,units="in")
 
 
 

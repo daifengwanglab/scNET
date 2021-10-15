@@ -25,8 +25,8 @@ colnames(rosmap.ge)=gsub("X","",colnames(rosmap.ge))
 features=rosmap.ge[rosmap.ge$geneName %in% features.tfs, ]
 rownames(features)=features$geneName
 features$geneName=NULL
-features=t(features)
-features=as.data.frame(scale(features))
+features=as.data.frame(scale(t(features)))
+#features=scale(features)
 
 #phenotypes
 rosmap.pheno=read.table("~/Desktop/AlzheimersDLPFCPhenotypesUpdatedForSaniya.csv", sep=",", header=T, )
@@ -51,10 +51,21 @@ cogdx.train=features[rownames(cogdx.train) %in% patients.cogdx.pos |rownames(cog
 cogdx.train$Class=ifelse(rownames(cogdx.train) %in% patients.cogdx.pos,"yes","no")
 
 
+#dcfdx Clinical cognitive diagnosis summary
+patients.dcfdx.pos=rosmap.pheno[rosmap.pheno$dcfdx==1 | rosmap.pheno$dcfdx==2 | rosmap.pheno$dcfdx==3,]$Patient
+patients.dcfdx.neg=rosmap.pheno[rosmap.pheno$dcfdx==4 | rosmap.pheno$dcfdx==5 |  rosmap.pheno$dcfdx==6  ,]$Patient  #| rosmap.pheno$dcfdx==2 | rosmap.pheno$dcfdx==3,
+
+#add labels for dcfdx
+dcfdx.train=features
+dcfdx.train=features[rownames(dcfdx.train) %in% patients.dcfdx.pos |rownames(dcfdx.train) %in% patients.dcfdx.neg, ]
+dcfdx.train$Class=ifelse(rownames(dcfdx.train) %in% patients.dcfdx.pos,"yes","no")
+
+
+
 
 #braak
-patients.braak.pos=rosmap.pheno[rosmap.pheno$Braak.Progression==0 | rosmap.pheno$Braak.Progression==1 | rosmap.pheno$Braak.Progression==2| rosmap.pheno$Braak.Progression==3,]$Patient
-patients.braak.neg=rosmap.pheno[rosmap.pheno$Braak.Progression==4 | rosmap.pheno$Braak.Progression==5 | rosmap.pheno$Braak.Progression==6,]$Patient
+patients.braak.pos=rosmap.pheno[rosmap.pheno$Braak.Progression==0 | rosmap.pheno$Braak.Progression==1 | rosmap.pheno$Braak.Progression==2,]$Patient
+patients.braak.neg=rosmap.pheno[rosmap.pheno$Braak.Progression==5 | rosmap.pheno$Braak.Progression==6 ,]$Patient
 
 #add labels for braak
 braak.train=features
@@ -103,17 +114,21 @@ mtry=1
 
 for(j in 1:10)
 {
-  auc.cerad = cv(data = cerad.train, k = 5,C=mtry)
-  name=paste("auc.cerad",j,sep="_")
-  assign(name,auc.cerad)
+  #auc.cerad = cv(data = cerad.train, k = 5,C=mtry)
+  #name=paste("auc.cerad",j,sep="_")
+  #assign(name,auc.cerad)
 
-  auc.cogdx = cv(data = cogdx.train,k = k,C=mtry)
-  name=paste("auc.cogdx",j,sep="_")
-  assign(name,auc.cogdx)
+  #auc.cogdx = cv(data = cogdx.train,k = k,C=mtry)
+  #name=paste("auc.cogdx",j,sep="_")
+  #assign(name,auc.cogdx)
 
   auc.braak = cv(data = braak.train,k = k,C=mtry)
   name=paste("auc.braak",j,sep="_")
   assign(name,auc.braak)
+
+  #auc.dcfdx = cv(data = dcfdx.train,k = k,C=mtry)
+  #name=paste("auc.dcfdx",j,sep="_")
+  #assign(name,auc.dcfdx)
 
   auc.random = cv(data = transform( braak.train, Class = sample(Class)),k = k,C=mtry)
   name=paste("auc.random",j,sep="_")
@@ -121,7 +136,9 @@ for(j in 1:10)
 
 }
 
-phenotypes=c("auc.cerad","auc.cogdx","auc.braak","auc.random")
+#phenotypes=c("auc.cerad","auc.cogdx","auc.braak","auc.random","auc.dcfdx")
+phenotypes=c("auc.random","auc.dcfdx")
+
 acc.tbl=data.frame(acc=NULL,pheno=NULL,cond=NULL)
 for (i in 1:length(phenotypes))
 {

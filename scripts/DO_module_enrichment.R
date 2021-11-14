@@ -68,21 +68,21 @@ for (i in 1:length(list))
 }
 GO.diff.cent.enrich.tbl=diff.cent.enrich.tbl
 
-p1=ggplot(module.enrich.tbl,aes(x=cell,y=Nmodules,fill=cond))+
-geom_bar(stat="identity",position="dodge")+facet_grid(th~as.numeric(msize))+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
-theme_bw(base_size=12) + labs(y="# of co-regulation modules",x="cell types")+
+
+
+module.enrich.tbl$PercAnnot=(module.enrich.tbl$annotated/module.enrich.tbl$total)*100
+module.enrich.tbl$condition=ifelse(module.enrich.tbl$cell %like% "AD","AD","Ctrl")
+module.enrich.tbl$cell=gsub("AD.","",module.enrich.tbl$cell)
+module.enrich.tbl$cell=gsub("Ctrl.","",module.enrich.tbl$cell)
+
+
+p3=ggplot(module.enrich.tbl,aes(x=cell,y=PercAnnot,fill=condition))+
+geom_bar(stat="identity",position="dodge")+facet_grid(th~as.numeric(msize))+
+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
+theme_bw(base_size=12) + labs(y="Fraction of predicted modules\n with GO annotations",x="cell types")+
 theme(legend.position = "top")+theme(axis.text.x=element_text(angle=90))
 
- p2=ggplot(module_gene_count.tbl,aes(x=celltype,y=Ngenes))+
- geom_point(aes(colour=factor(cond),
-      fill = factor(cond)), shape=21, size = 0.4)+
- scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
- facet_grid(th~as.numeric(msize)) +
- theme_bw(base_size=12) + labs(y="# genes",x="cell types")+
- theme(legend.position = "top")+theme(axis.text.x=element_text(angle=90))
-
-ggsave(p1,filename="Figures/p.no_mods_per_ct.pdf", device="pdf",width=6,height=6,units="in")
-
+ggsave(p3,filename="../Figures/p.frac_mod_annot.pdf", device="pdf",width=6,height=6,units="in")
 
 
 
@@ -126,42 +126,6 @@ for (i in 1:length(list))
   module.DO.enrich.tbl=rbind(module.DO.enrich.tbl,newtbl)
 }
 ################################
-#prep for fig 5 subnets
-#extract ALZ modules based on DO enrichment
-alz=diff.cent.enrich.tbl[diff.cent.enrich.tbl$Description %like% "Alzheimer",]
-
-
-#ctrl has module 2 with alz genes signif enriched; extract the hits
-shared_symbol=alz[alz$cell %in% "Ctrl.Mic",]
-shared_symbol=as.data.frame(shared_symbol[,c("shared_symbol")])
-colnames(shared_symbol)=c("alz.hits.ctrl.module")
-shared_symbol=data.frame(alz.hits.ctrl.module = unlist(strsplit(as.character(shared_symbol$alz.hits.ctrl.module), ";")))
-alz.risk.ctrl.module.genes=unique(shared_symbol$alz.hits.ctrl.module)
-
-#select module 2 alz risk genes in ctrl mic net
-indx.c=match(alz.risk.ctrl.module.genes,colnames(Ctrl.Mic.network.JI.coreg.mat))
-indx.r=match(alz.risk.ctrl.module.genes,rownames(Ctrl.Mic.network.JI.coreg.mat))
-ctrl.mic.alz.genes.coregnet.mat=Ctrl.Mic.network.JI.coreg.mat[indx.r,indx.c]
-g=graph.adjacency(ctrl.mic.alz.genes.coregnet.mat,weighted=TRUE)
-df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-df=df[df$weight >= 0.3,]
-ctrl.mic.alz.genes.coregnet.df=df
-write.table(ctrl.mic.alz.genes.coregnet.df,file="ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
-col.names=T,sep="\t",quote=FALSE)
-
-
-#select module 2 alz risk genes in AD mic net
-indx.c=match(alz.risk.ctrl.module.genes,colnames(AD.Mic.network.JI.coreg.mat))
-indx.r=match(alz.risk.ctrl.module.genes,rownames(AD.Mic.network.JI.coreg.mat))
-AD.mic.alz.genes.coregnet.mat=AD.Mic.network.JI.coreg.mat[indx.r,indx.c]
-g=graph.adjacency(AD.mic.alz.genes.coregnet.mat,weighted=TRUE)
-df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-df=df[df$weight >= 0.3,]
-AD.mic.alz.genes.coregnet.df=df
-write.table(AD.mic.alz.genes.coregnet.df,file="AD.ctrl.mod2.mic.alz.genes.coregnet.dat",row.names=F,
-col.names=T,sep="\t",quote=FALSE)
-
-
 
 #fold change values
 all.deg=read_xlsx("~/work/scNET_manuscript/data/gematrix/Diff.Exp.Genes.DataS2.MIT.xlsx",sheet="Mic",skip=1)[,1:9]
@@ -175,20 +139,53 @@ col.names=T,sep="\t",quote=FALSE)
 
 ##########################################
 #cross compare modules
-list=ls(pattern="*\\.modules")
+
+tm=c(0.2)
+msize=c(30)
+
+for(i in 1:length(nets))
+{
+  for (j in 1:length(th))
+  {
+    for (k in 1:length(msize))
+    {
+      name=nets[i]
+      celltype=gsub(".network","",name)
+      net=as.data.frame(lapply(nets[i],get))
+      net=net[,c("TF","TG","abs_coef")]
+      net=distinct(net)
+      name=paste(name,"JI.coreg.mat",sep=".")
+      assign(name, find_target_pairs_matrix(net))
+      mat=get(name)
+      mat[mat < th[j]] <-0 #remove edges with less than th% overlap
+      name=gsub(".mat",".modules", name)
+      tag=paste("JI",th[j],sep="_")
+      name=paste(name,tag,sep=".")
+      tag=paste("ModSize",msize[k],sep="_")
+      name=paste(name,tag,sep=".")
+      assign(name, detect_modules(mat,msize[k]))
+    }
+  }
+}
+
+
+pattern="*.network.JI.coreg.modules.JI_0.2.ModSize_30"
+list=ls(pattern=pattern)
+
 for (i in 1:length(list))
 {
   name=list[i]
   name=gsub(".network.JI.coreg.modules","",name)
   df=get(list[i])
-  df$moduleID=paste(name,df$moduleID,sep="_")
   df=df[!(df$moduleID %like% "_0"), ] #remove singletons (module 0)
+  df$moduleID=paste(name,df$moduleID,sep="_")
   assign(list[i],df)
 }
 
 data = Reduce(function(x, y) merge(x, y, all=T), lapply(list,get), accumulate=F)
 data$score=1
 colnames(data)=c("TF","target","score")
+data$target=gsub(".JI_0.2.ModSize_30","",data$target)
 m=acast(data, TF~target, value.var="score")
 m=t(m)
 m[is.na(m)]=0 #set NA =0
@@ -198,26 +195,28 @@ i12 = m %*% t(m)
 s = diag(i12) %*% matrix(1, ncol = length(diag(i12)))
 u12 = s + t(s) - i12
 jacc= i12/u12
-jacc[jacc > 0.5] = 1
+#jacc[jacc > 0.5] = 1
 diag(jacc)=0
 
-npgcolors=pal_npg("nrc", alpha = 1)(10)
+npgcolors=pal_npg("nrc", alpha = 0)(10)
 tmp=data.frame(cell=colnames(jacc))
 tmp$celltype=ifelse(tmp$cell %like% "Ex","Ex",ifelse(tmp$cell %like% "In","In",ifelse(tmp$cell %like% "Mic","Mic","Oli")))
-tmp$state=ifelse(tmp$cell %like% "AD","AD","Control")
+tmp$state=ifelse(tmp$cell %like% "AD","AD","Ctrl")
+
 
 rowannot=rowAnnotation(Celltype=tmp$celltype,State=tmp$state,
-col = list(Celltype = c("In" = npgcolors[1], "Ex" = npgcolors[2], "Mic"=npgcolors[3],"Oli"=npgcolors[4]),
-      State=c("AD"=npgcolors[5],"Control"=npgcolors[6]),width = unit(2, "mm")
-  )
-)
-column_ha=HeatmapAnnotation(Celltype=tmp$celltype,State=tmp$state,
-col = list(Celltype = c("In" = npgcolors[1], "Ex" = npgcolors[2], "Mic"=npgcolors[3],"Oli"=npgcolors[4]),
-      State=c("AD"=npgcolors[5],"Control"=npgcolors[6])
-  ))
-heatmap=Heatmap(jacc,col=viridis(3),show_column_names = FALSE)+rowannot
+ col = list(Celltype = c("In" = npgcolors[1], "Ex" = npgcolors[2], "Mic"=npgcolors[3],"Oli"=npgcolors[4]),
+       State=c("AD"=npgcolors[5],"Ctrl"=npgcolors[6]),width = unit(2, "mm")
+   )
+ )
 
-pdf(file="Figures/module_cross_heatmpa.pdf",width=5,height=4)
+column_ha=HeatmapAnnotation(Celltype=tmp$celltype,State=tmp$state,
+col = list(Celltype = c("In"=npgcolors[1],"Ex"=npgcolors[2],"Mic"=npgcolors[3],"Oli"=npgcolors[4]),
+      State=c("AD"=npgcolors[5],"Ctrl"=npgcolors[6])
+  ))
+heatmap=Heatmap(jacc,col=viridis(100),top_annotation = column_ha)+rowannot
+
+pdf(file="../Figures/module_cross_heatmap.pdf",width=5,height=5)
 heatmap
 dev.off()
 

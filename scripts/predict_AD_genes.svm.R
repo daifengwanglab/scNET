@@ -94,8 +94,22 @@ for(i in 1:length(nets))
   net=net[,c("TF","TG","abs_coef")]
   net=distinct(net)
   mat=tidyr::pivot_wider(net, names_from = TF, values_from = abs_coef)
-  mat[is.na(mat)]=0
+  #mat[is.na(mat)]=0
+  mat[is.na(mat)]=min(net$abs_coef)*0.01
+
   mat=as.data.frame(mat)
+
+  #add TFnodes with no indegrees
+  TF.nodes=unique(net$TF)
+  df = data.frame(matrix(ncol = ncol(mat), nrow = length(TF.nodes)))
+  colnames(df)=colnames(mat)
+  df$TG=TF.nodes
+  df[is.na(df)]=min(net$abs_coef)*0.01
+  #df[is.na(df)]=0
+
+  df=df[!(df$TG %in% intersect(TF.nodes,mat$TG)),]
+  mat=rbind(mat,df)
+
   #label alz genes as positives in the network matrix
   mat$Class=ifelse(mat$TG %in% alz,1,-1)
 
@@ -160,12 +174,76 @@ acc.tbl$ct=gsub("AD.","",gsub("Ctrl.","",acc.tbl$ct))
 npgcolors=pal_npg("nrc", alpha = 1)(10)
 p.adgenes.acc.boxplot=ggplot(acc.tbl,aes(x=ct,y=acc,fill=cond)) +
   geom_boxplot(notch=TRUE)+
-  labs(y="Balanced accuracy in predicting \n known AD genes \n Repeated 5 fold CV",x="Cell type networks")+
- theme_bw(base_size=12)+theme(legend.position="top")+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))
-#ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
+  labs(y="Balanced accuracy in predicting \n known AD genes",x="Cell type networks")+
+ theme_bw(base_size=12)+theme(legend.position="top")+scale_fill_manual(name="condition",values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))
+ggsave(p.adgenes.acc.boxplot,filename="Figures/p.adgenes.acc.boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 
 #select mic feature scores
 AD.Mic.imp$average=rowMeans(AD.Mic.imp)
 AD.Mic.imp=AD.Mic.imp[order(AD.Mic.imp$average),]
-#write.table(AD.Mic.imp,file="Mic.AD.Feature_weights.mat",row.names=T,col.names=T,sep="\t",quote=F)
+write.table(AD.Mic.imp,file="~/work/scNET_manuscript/AD_MIT/supp_data/AD.Mic.imp.txt",row.names=T,col.names=T,sep="\t",quote=F)
+
+
+
+
+
+#label prediction for mic ad model
+net=AD.Mic.network
+net=net[,c("TF","TG","abs_coef")]
+net=distinct(net)
+
+mat=tidyr::pivot_wider(net, names_from = TF, values_from = abs_coef)
+#mat[is.na(mat)]=0
+mat[is.na(mat)]=min(net$abs_coef)*0.01
+mat=as.data.frame(mat)
+
+
+#add TFnodes with no indegrees
+TF.nodes=unique(net$TF)
+df = data.frame(matrix(ncol = ncol(mat), nrow = length(TF.nodes)))
+colnames(df)=colnames(mat)
+df$TG=TF.nodes
+df[is.na(df)]=min(net$abs_coef)*0.01
+#df[is.na(df)]=0
+df=df[!(df$TG %in% intersect(TF.nodes,mat$TG)),]
+mat=rbind(mat,df)
+
+#label alz genes as positives in the network matrix
+mat$Class=ifelse(mat$TG %in% alz,1,-1)
+
+mat.positive=mat[mat$Class == 1,]
+
+print(dim(mat.positive))
+
+##create negative labels as those that are not positives and also not related to mental disorders
+#mat.negative=mat[mat$Class == -1 & (!mat$TG %in% uncorrDis.genes),]
+mat.negative=mat[mat$Class == -1 ,]
+
+
+set.seed(123)
+#randomly select rows equal to the number of positives
+mat.tmp=sample_n(mat.negative,dim(mat.positive)[1])
+
+#train matrix
+mat.feat=rbind(mat.positive,mat.tmp)
+
+#test matrix
+#final_test=mat[!(mat$TG %in% mat.feat$TG),]
+final_test=mat
+colnames(final_test)=gsub("-","_",colnames(final_test))
+rownames(final_test)=final_test$TG
+final_test$TG=NULL
+
+# Set the random seed for reproducibility
+data=mat.feat[,-1]
+colnames(data)=gsub("-","_",colnames(data))
+
+fit = randomForest(formula= as.factor(Class) ~ ., data = data,importance=TRUE)
+
+# Predict the fold
+yh = as.data.frame(predict(fit, newdata = final_test, type="prob"))
+yh=yh[order(yh[,1]),]
+yh$prior=ifelse(rownames(yh) %in% alz.dis,1,0)
+
+write.table(yh,file="~/work/scNET_manuscript/AD_MIT/supp_data/AD_gene_prediction.mic.txt",row.names=T,col.names=T,sep="\t",quote=F)

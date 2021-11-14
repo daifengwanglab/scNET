@@ -19,8 +19,12 @@ set.seed(123)
 
 nets=ls(pattern="*\\.network")
 
-th=c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
-msize=c(10,20,30,40,50,60,70,80,90,100)
+#th=c(0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
+#msize=c(10,20,30,40,50,60,70,80,90,100)
+
+
+tm=c(0.2)
+msize=c(30)
 
 for(i in 1:length(nets))
 {
@@ -93,11 +97,10 @@ ggsave(p1,filename="Figures/p.no_mods_per_ct.pdf", device="pdf",width=6,height=6
 ggsave(p2,filename="Figures/p.no_genes_per_mod.pdf", device="pdf",width=6,height=6,units="in")
 
 
-#select the th and msize parameters (here th = 0.4 and msize =10)
+#select the th and msize parameters (here th = 0.2 and msize =30)
 #select those modules
-pattern="*.network.JI.coreg.modules.JI_0.4.ModSize_10"
+pattern="*.network.JI.coreg.modules.JI_0.2.ModSize_30"
 list=ls(pattern=pattern)
-list=Filter(function(x) !any(grepl("ModSize_100", x)), list)
 module_gene_count.tbl=data.frame(celltype=NULL,Nmodules=NULL,Ngenes=NULL,cond=NULL,th=NULL,msize=NULL)
 for (i in 1:length(list))
 {
@@ -115,78 +118,25 @@ for (i in 1:length(list))
   module_gene_count.tbl=rbind(module_gene_count.tbl,tmp)
 }
 
+#check the end of this script to find where GO table came from
+tmp=GO.diff.cent.enrich.tbl[ GO.diff.cent.enrich.tbl$th %in% "0.2" & GO.diff.cent.enrich.tbl$msize %in% "30" & GO.diff.cent.enrich.tbl$geneset < 500 & GO.diff.cent.enrich.tbl$geneset > 10 ,]
+tmp=tmp[,c("label","cell")]
+tmp.df=as.data.frame(table(tmp$cell))
 
+module_gene_count.tbl$nGOBP=tmp.df$Freq
 p3=ggplot(module_gene_count.tbl,aes(x=celltype,y=Nmodules,fill=cond))+
-geom_bar(stat="identity",position="dodge")+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]))+
-theme_bw(base_size=12) + labs(y="# of co-regulation modules",x="cell types")+
+geom_bar(stat="identity",position="dodge")+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]), name="")+
+theme_bw(base_size=12) + labs(y="# of \n co-regulation modules",x=" ")+
 theme(legend.position = "top")
 
-ggsave(p3,filename="Figures/p.no_mods_per_ct_ji0.4_msize10.pdf", device="pdf",width=4,height=4,units="in")
+p4=ggplot(module_gene_count.tbl,aes(x=celltype,y=nGOBP,fill=cond))+
+geom_bar(stat="identity",position="dodge")+scale_fill_manual(values=c("AD"=npgcolors[1],"Ctrl"=npgcolors[2]), name="")+
+theme_bw(base_size=12) + labs(y="# of GOBPs enriched in modules",x=" ")+
+theme(legend.position = "top")
 
+ggsave(p3,filename="../Figures/p.no_mods_per_ct_ji0.2_msize30.pdf", device="pdf",width=2,height=2,units="in")
+ggsave(p4,filename="../Figures/p.no_GOBP_in_mods_per_ct_ji0.2_msize30.pdf", device="pdf",width=2,height=2,units="in")
 
-#calculate module denisty
-Modules.df=data.frame(Modulename=NULL,cell=NULL)
-
-#calculate edge density per module for ctrl nets
-list=Filter(function(x) !any(grepl("AD", x)), list)
-for(i in 1:length(list))
-{
-  Module.density.tbl=data.frame("Modulename"=NULL,"Ctrl"=NULL,"AD"=NULL,lfc=NULL)
-  cell=gsub(".network.JI.coreg.modules","",list[i])
-  cell=gsub("Ctrl.","",cell)
-  df=get(list[i])
-  allmodules=unique(df$moduleID)
-  #remove module0
-  allmodules= Filter(function(x) !any(grepl("0", x)), allmodules)
-  for (j in 1:length(allmodules))
-  {
-      module=df[df$moduleID %in% allmodules[j],]$gene
-      matname=paste("Ctrl",cell,sep=".")
-      matname=paste(matname,".network.JI.coreg.mat",sep="")
-      mat=get(matname)
-      indx.c=match(module,colnames(mat))
-      indx.r=match(module,rownames(mat))
-      indx.c=indx.c[!is.na(indx.c)]
-      indx.r=indx.r[!is.na(indx.r)]
-      module.mat=mat[indx.r,indx.c]
-      g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
-      df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-      e.density.Ctrl=sum(df.2$weight)/length(unique(module))
-
-      matname=paste("AD",cell,sep=".")
-      matname=paste(matname,".network.JI.coreg.mat",sep="")
-      mat=get(matname)
-      indx.c=match(module,colnames(mat))
-      indx.r=match(module,rownames(mat))
-      indx.c=indx.c[!is.na(indx.c)]
-      indx.r=indx.r[!is.na(indx.r)]
-      module.mat=mat[indx.r,indx.c]
-      g=graph_from_adjacency_matrix(module.mat,weighted=TRUE, diag=FALSE, mode='undirected')
-      df.2= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-      e.density.AD=sum(df.2$weight)/length(unique(module))
-
-      df.3=data.frame("Modulename"=allmodules[j],"Ctrl"=e.density.Ctrl,"AD"=e.density.AD)
-      df.3$lfc = log2(df.3[,colnames(df.3)%like% "AD"]/ df.3[,colnames(df.3)%like% "Ctrl"])
-      Module.density.tbl=rbind(Module.density.tbl,df.3)
-  }
-  colnames(Module.density.tbl)=c("Modulename","Ctrl","AD","lfc")
-  Module.density.tbl$Cell=cell
-  name=paste(cell,"Module.density.tbl",sep=".")
-  assign(name,Module.density.tbl)
-}
-
-
-#box plot
-for_boxplot=rbind(Mic.Module.density.tbl,Oli.Module.density.tbl)
-for_boxplot=rbind(for_boxplot,Ex.Module.density.tbl)
-for_boxplot=rbind(for_boxplot,In.Module.density.tbl)
-
-npgcolors=pal_npg("nrc", alpha = 1)(10)
-p.lfc_density_module_boxplot=ggplot(for_boxplot,aes(x=Cell,y=lfc)) +
-  geom_boxplot()+
-  labs(y="change in module edge density",x="Cell types")+
- theme_bw(base_size=12)+theme(legend.position="top")
-#ggsave(p.lfc_density_module_boxplot,filename="Figures/p.lfc_density_module_boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 
 #mic AD module expression fold change
@@ -204,33 +154,52 @@ all.deg.earlylate=as.data.frame(all.deg.earlylate[,c(1,5)])
 colnames(all.deg.earlylate)=c("gene","earlyvlate")
 
 #for enrichment analysis
-tmp=left_join(all.deg.earlylate,all.deg.no)
-tmp=left_join(tmp,all.deg.noearly)
+tmp=left_join(all.deg.no,all.deg.noearly)
+tmp=left_join(tmp,all.deg.earlylate)
+
 write.table(tmp,file="all.deg.MIT.FC.mat", col.names=TRUE, row.names=FALSE,sep="\t",quote=F)
 
-df=AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10
+df=AD.Mic.network.JI.coreg.modules.JI_0.2.ModSize_30
 write.table(df[as.character(df$moduleID) != "0",],file="AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10.genesets", col.names=FALSE, row.names=FALSE,sep="\t",quote=F)
 
 #read enrichment results
-mat=read.table("all.deg.MIT.FC.mat-AD.Mic.network.JI.coreg.modules.JI_0.4.ModSize_10.fdr-based.zscore.mat", header=T, row.names=1)
+npgcolors=pal_npg("nrc", alpha = 1)(10)
+
+mat=read.table("all.deg.MIT.FC.mat-AD.Mic.network.JI.coreg.modules.JI_0.2.ModSize_30.fdr-based.zscore.mat", header=T, row.names=1)
 mat=mat[,-c(1:2)]
 rownames(mat)=paste("M",rownames(mat),sep="")
-colnames(mat)=c("early vs. late","no path.","no path. vs. early path.")
+colnames(mat)=c("no pathology","no vs. early","early vs. late")
 
 paletteLength=100
-myColor = colorRampPalette(c(npgcolors[8], "white", npgcolors[4]))(paletteLength)
-myBreaks <- c(seq(-10, 0, length.out=ceiling(paletteLength/2) + 1),
-+ seq(max(as.matrix(mat))/paletteLength, 10, length.out=floor(paletteLength/2)))
+#myColor = colorRampPalette(c(npgcolors[8], "white", npgcolors[4]))(paletteLength)
+myColor = colorRampPalette(c("#B22222", "white", "#0A24CC"))(paletteLength)
+myBreaks <- c(seq(-2, 0, length.out=ceiling(paletteLength/2) + 1),
++ seq(max(as.matrix(mat))/paletteLength, 2, length.out=floor(paletteLength/2)))
 
 pdf(file="Figures/p.module_FC_AD_Path.pdf")
-pheatmap(as.matrix(mat),cellwidth=12,cellheight=8,show_rownames=TRUE,
+pheatmap(t(as.matrix(mat)),cellwidth=12,cellheight=8,show_rownames=TRUE,
  breaks=myBreaks,
  col=myColor,
  cluster_cols=F,
- cluster_rows=T,
- border_color = "grey60",
+ cluster_rows=F,
+ border_color = "black",
  angle_col=c("45")
  )
 dev.off()
 
-#GO
+
+#select module 6 from heatmap and extract GO
+#run  the script DO_module_enrichment.R to get "GO.diff.cent.enrich.tbl" object
+GO.diff.cent.enrich.filt.tbl=GO.diff.cent.enrich.tbl[GO.diff.cent.enrich.tbl$geneset < 500 & GO.diff.cent.enrich.tbl$geneset > 10,]
+write.table(GO.diff.cent.enrich.filt.tbl, file="GO.diff.cent.enrich.filt.tbl", sep="\t",quote=F, row.names=F, col.names=T)
+
+
+
+#module 2 GO BP barplot
+ mat=read.table("../data/mic.module2.GOBP.txt", sep="\t", header=T)
+mat$logp=-1*log10(mat$pval)
+ p=ggplot(mat,aes(x=reorder(label, logp),y=logp))+
+ geom_bar( stat="identity", fill="grey47")+coord_flip()+
+ theme_bw(base_size=12) + labs(y="-1*log(pvalue)",x="Biological process")
+
+ ggsave(p,filename="Figures/p.mod2_GOBP_bar.pdf", device="pdf",width=2,height=2,units="in")

@@ -51,4 +51,4 @@ for (i in 2:length(list))
   old=merge(old, get(list[i]), by="gene", all=TRUE)
 }
 
-write.table(old, file="centralities/centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
+#write.table(old, file="centralities/centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)

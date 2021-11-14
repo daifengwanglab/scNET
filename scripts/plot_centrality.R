@@ -56,9 +56,9 @@ labs(x="cell type",y="Biological process")+ggtitle(expression(Delta ~ "In degree
 theme(text = element_text(size = 10))+
 theme_bw(base_size=12)+theme(axis.text.x=element_text(angle=90))
 
-pdf(file="Figures/p.GO.degreeIn.diffCent.pdf")
-p.GO.degreeIn.diffCent
-dev.off()
+#pdf(file="Figures/p.GO.degreeIn.diffCent.pdf")
+#p.GO.degreeIn.diffCent
+#dev.off()
 
 
 
@@ -98,9 +98,9 @@ p.GO.degreeOut.diffCent=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size
 labs(x="cell type",y="Biological process")+ggtitle(expression(Delta ~ "Out degree" ))+
 theme(text = element_text(size = 10)) +
 theme_bw(base_size=12)
-pdf(file="Figures/p.GO.degreeOut.diffCent.pdf")
-p.GO.degreeOut.diffCent
-dev.off()
+#pdf(file="Figures/p.GO.degreeOut.diffCent.pdf")
+#p.GO.degreeOut.diffCent
+#dev.off()
 
 
 
@@ -139,9 +139,9 @@ p.GO.bet.diffCent=ggplot(data, aes(y=label, x=cell)) + geom_point(aes(size=-log1
 labs(x="cell type",y="Biological process")+ggtitle(expression(Delta ~ "Betweenness" ))+
 theme(text = element_text(size = 10)) +
 theme_bw(base_size=12)
-pdf(file="Figures/p.GO.bet.diffCent.pdf")
-p.GO.bet.diffCent
-dev.off()
+#pdf(file="Figures/p.GO.bet.diffCent.pdf")
+#p.GO.bet.diffCent
+#dev.off()
 
 
 
@@ -213,9 +213,9 @@ geom_point(color = "black",
 						 theme_bw(base_size=12)
 
 
-pdf(file="Figures/p.cent.scatter.pdf")
-p.df.for_scatter
-dev.off()
+#pdf(file="Figures/p.cent.scatter.pdf")
+#p.df.for_scatter
+#dev.off()
 
 
 

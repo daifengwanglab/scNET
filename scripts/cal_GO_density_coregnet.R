@@ -48,8 +48,9 @@ for(i in 1:length(nets))
       gs.mat=mat[indx1,indx2]
       g=graph_from_adjacency_matrix(gs.mat, weighted=TRUE, diag=FALSE, mode='undirected')
       df= get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
-      e.density=sum(df$weight)/length(unique(gs))
-      #e.density=edge_density(g)
+      tot=length(unique(gs))
+      e.density=sum(df$weight)/(tot*(tot-1)/2)
+      #e.density=edge_density(g, loops=FALSE)
       df=data.frame("GOname"=gsname,"edgedensity"=e.density)
       GO.density.tbl=rbind(GO.density.tbl,df)
     }
@@ -106,9 +107,9 @@ npgcolors=pal_npg("nrc", alpha = 1)(10)
 p.no_density_GOBP=ggplot(df_to_plot,aes(x=cell,y=value)) +
   geom_col(aes(fill=variable),width=0.5)+
   labs(y="# of GO BP",x="Cell types")+
-  scale_fill_manual(values=c("pos"=npgcolors[4],"neg"=npgcolors[8]),name=expression(Delta ~ "coregulation" ),labels=c("gain","loss"))+
+  scale_fill_manual(values=c("pos"=npgcolors[4],"neg"=npgcolors[8]),name=expression(Delta ~ "coherence" ),labels=c("gain","loss"))+
  theme_bw(base_size=12)+theme(legend.position="top")
-ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=3,height=3,units="in")
+ggsave(p.no_density_GOBP,filename="Figures/p.no_density_GOBP.pdf", device="pdf",width=2.5,height=2,units="in")
 
 
 #box plot
@@ -121,7 +122,7 @@ p.lfc_density_GOBP_boxplot=ggplot(for_boxplot,aes(x=cell,y=lfc)) +
   geom_boxplot()+
   labs(y="change in GO edge density",x="Cell types")+
  theme_bw(base_size=12)+theme(legend.position="top")
-ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_GOBP_boxplot.pdf", device="pdf",width=3,height=3,units="in")
+#ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_GOBP_boxplot.pdf", device="pdf",width=3,height=3,units="in")
 
 #if using migsdb
 #ggsave(p.lfc_density_GOBP_boxplot,filename="Figures/p.lfc_density_migsdb_boxplot.pdf", device="pdf",width=3,height=3,units="in")

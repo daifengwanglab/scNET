@@ -36,7 +36,7 @@ celltypes=c("Mic","Oli","Ex","In")
     colnames(df)=c("gene",newhcolname)
     assign(name,df)
     pcounter=0
-    for (j in 1:10) #original data is for 1000 runs; this is just trial
+    for (j in 1:5) #original data is for 1000 runs; this is just trial
     {
       TF.net.rand=erdos.renyi.game(length(V(TF.net.igraph)),length(E(TF.net.igraph)), type="gnm",directed = TRUE)
       TF.net.rand.df=as.data.frame(get.edgelist(TF.net.rand))
@@ -91,6 +91,10 @@ celltypes=c("Mic","Oli","Ex","In")
     df$network="Ctrl"
     Ctrl.all.cts.dist=rbind(Ctrl.all.cts.dist,df)
   }
+
+  hei.height.matrix=rbind(Ctrl.all.cts.dist,AD.all.cts.dist)
+  hei.height.matrix$level=cut(hei.height.matrix$h,c(-Inf,-0.33,0.33,1),labels=c("Bottom","Middle","Top"))
+  write.table(hei.height.matrix,file="~/work/scNET_manuscript/AD_MIT/supp_data/hei.height.matrix.txt",sep="\t",col.names=T, row.names=F, quote=F)
 
   #microglia scatter plot
   mic.df=left_join(Ctrl.Mic.hie.ht,AD.Mic.hie.ht)
@@ -155,6 +159,8 @@ meanFCTblCtrl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
 no.of.enh.tbl.Ctrl=data.frame(Cell=NULL,Promoter=NULL, Enhancer=NULL, Level=NULL, totalTF=NULL)
 edge_density_tbl=data.frame(Cell=NULL,edensity=NULL, Level=NULL)
 meanRWscore.tbl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
+meanTargetFCscore.tbl=data.frame(Cell=NULL,Top=NULL, Middle=NULL, Bottom=NULL)
+
 
 for (i in 1:length(celltypes))
 {
@@ -171,6 +177,11 @@ for (i in 1:length(celltypes))
     df.deg.hei=merge(ct.deg,df,by="gene")
     df.deg.hei$AD = cut(df.deg.hei[,3],c(-Inf,-0.33,0.33,1),labels=c("Bottom","Middle","Top"))
     df.deg.hei$Control = cut(df.deg.hei[,4],c(-Inf,-0.33,0.33,1),labels=c("Bottom","Middle","Top"))
+
+
+    fctbl=data.frame(Cell=celltypes[i],Top=Topmean,Middle=Middlemean,Bottom=Bottomean)
+    meanFCTblAD=rbind(meanFCTblAD,fctbl)
+
 
     #AD networks fold change
     Topmean=mean(df.deg.hei$FC[df.deg.hei$AD=="Top"])
@@ -278,20 +289,25 @@ for (i in 1:length(celltypes))
     meanRWscore.tbl=rbind(meanRWscore.tbl,RWtbl)
 
 
+    #target foldchange
+    net=as.data.frame(lapply(nets[1],get))
+    TF.net=net[,c("TF","TG","mse")]
+    TF.net=distinct(TF.net)
+
   #   plot sankey
-    p.df = df.deg.hei %>% make_long(colnames(df.deg.hei[,5:6]))
-    p=ggplot(p.df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
-      geom_sankey(flow.alpha = .3,
-                  node.color = "grey60") +
-      scale_fill_manual(values = alpha(c("red", "blue"),0.5), name="Hierarchy Levels") +
-      labs(x=NULL)+
-      theme_sankey(base_size = 12) +
-      ggtitle(celltypes[i])+theme(plot.title = element_text(hjust = 0.30,vjust=0.9))+
-      theme(legend.position = "none")
-    name=paste("p",pattern,sep=".")
-    name=paste(name,".sankey.TFNet",sep="")
-    name=paste(name,"pdf",sep=".")
-    name=paste("Figures",name,sep="/")
+  #  p.df = df.deg.hei %>% make_long(colnames(df.deg.hei[,5:6]))
+  #  p=ggplot(p.df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
+  #    geom_sankey(flow.alpha = .3,
+  #                node.color = "grey60") +
+  #    scale_fill_manual(values = alpha(c("red", "blue"),0.5), name="Hierarchy Levels") +
+  #    labs(x=NULL)+
+  #    theme_sankey(base_size = 12) +
+  #    ggtitle(celltypes[i])+theme(plot.title = element_text(hjust = 0.30,vjust=0.9))+
+  #    theme(legend.position = "none")
+  #  name=paste("p",pattern,sep=".")
+  #  name=paste(name,".sankey.TFNet",sep="")
+  #  name=paste(name,"pdf",sep=".")
+  #  name=paste("Figures",name,sep="/")
   #  ggsave(p,filename=name, device="pdf", height=2,width=2,units="in" )
 }
 

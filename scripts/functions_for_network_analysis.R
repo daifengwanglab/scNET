@@ -177,7 +177,6 @@ get_coregnet_graph=function(net,th) #network, JI threshold, tag
 	s = diag(i12) %*% matrix(1, ncol = length(diag(i12)))
 	u12 = s + t(s) - i12
 	jacc= i12/u12
-	genes_jaccard_dist.dat=melt(as.matrix(jacc))
 	grt=graph_from_adjacency_matrix(jacc,"undirected", weighted=TRUE, diag=FALSE)
 	tg=as.data.frame(get.edgelist(grt))
 	tg$jaccard=E(grt)$weight
@@ -300,15 +299,39 @@ plot_scatter=function(df,tag,th){
 d=df
 d$Name=rownames(d)
 d$lfc=log2(d[,1]/d[,2])
-p=ggplot(d, aes(x= AD, y = Ctrl, label = Name)) +
-geom_point(color = dplyr::case_when(d$lfc > th ~ npgcolors[3],
-                                      d$lfc < -th ~ npgcolors[8],
-                                      TRUE ~ "black"),
-             size = 3, alpha = 0.8) + ggtitle(expression(Delta ~ "Betweenness" ))+
-						 theme(text = element_text(size = 10)) +
-						 theme_bw(base_size=12)
-p
+
+#p=ggplot(d, aes(x= AD.Mic.degree_in, y = Ctrl.Mic.degree_in, label = Name)) +
+#  geom_point(color = dplyr::case_when(d$lfc >th ~ "#1b9e77",
+#                                      d$lfc < -th ~ "#d95f02",
+#                                      TRUE ~ "grey50"),
+#             size = 3, alpha = 0.8) +
+#  geom_text_repel(data          = subset(d, lfc > th),
+#                  nudge_y       = 32 - subset(d, lfc > th)$lfc,
+#                  size          = 4,
+#                  box.padding   = 1.5,
+#                  point.padding = 0.5,
+#                  force         = 100,
+#                  segment.size  = 0.2,
+#                  segment.color = "grey50",
+#                  direction     = "x") +
+#  geom_label_repel(data         = subset(d, lfc < -th),
+#                  nudge_y       = 16 - subset(d, lfc < -th)$lfc,
+#                  size          = 4,
+#                  box.padding   = 0.5,
+#                  point.padding = 0.5,
+#                  force         = 100,
+#                  segment.size  = 0.2,
+#                  segment.color = "grey50",
+#                  direction     = "x") +
+#									labs(x="Centrality in AD", y="Centrality in control")+
+#  scale_x_continuous(expand = expand_scale(mult = c(0.2, .2))) +
+#  scale_y_continuous(expand = expand_scale(mult = c(0.1, .1))) +
+#	theme(text = element_text(size = 10)) +
+#	theme_bw(base_size=12)
+#p
 }
+
+
 
 
 train_and_validate = function( data, fold, C) #returns average balanced acc and feat, imp. scores for each fold

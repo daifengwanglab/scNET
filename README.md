@@ -1,95 +1,54 @@
-# scNET: single cell network biology for understanding cell-type functional genomics
+# Single-cell network biology characterizes cell type gene regulation for drug repurposing and phenotype prediction in Alzheimer’s disease
 
+## Summary
+Dysregulation of gene expression in Alzheimer’s disease (AD) remains elusive, especially at the cell type level. Gene regulatory network, a key molecular mechanism linking transcription factors (TFs) and regulatory elements to govern target gene expression, can change across cell types in the human brain and thus serve as a model for studying gene dysregulation in AD. However, it is still challenging to understand how cell type networks work abnormally under AD. To address this, we integrated single-cell multi-omics data and predicted the gene regulatory networks in AD and control for four major cell types, excitatory and inhibitory neurons, microglia and oligodendrocytes. Importantly, we applied network biology approaches to analyze the changes of network characteristics across these cell types, and between AD and control. For instance, many hub TFs target different genes between AD and control (rewiring). Also, these networks show strong hierarchical structures in which top TFs (master regulators) are largely common across cell types, whereas different TFs operate at the middle levels in some cell types (e.g., microglia). The regulatory logics of enriched network motifs (e.g., feed-forward loops) further uncover cell type-specific TF-TF cooperativities in gene regulation. The cell type networks are highly modular and several network modules with cell-type-specific expression changes in AD pathology are enriched with AD-risk genes and putative targets of approved and pending AD drugs, suggesting possible cell-type genomic medicine in AD. Finally, using the cell type gene regulatory networks, we developed machine learning models to classify and prioritize additional AD genes. We found that top prioritized genes predict clinical phenotypes (e.g., cognitive impairment) with reasonable accuracy. Overall, this single-cell network biology analysis provides a comprehensive map linking genes, regulatory networks, cell types and drug targets and reveals dysregulated cell type gene dysregulatory mechanisms in AD.
 
-The following outlines the pipeline implemented for post-inference analysis of brain cell type specific gene regulatory networks. We developed this pipeline to highlight (and assign a biological meaning to) similarities and differences in global and local network topologies in a bunch of single cell gene regulatory networks.
+## Flow chart
+![alt text](https://github.com/daifengwanglab/scNET/workflow.png)
 
-If you wish to use this pipeline, start with a GRN inferred using any method of choice as input. Going with the trend, we have also added a module that rank aggregates networks inferred using different algorithm into a single consensus network for each cell type.
+## System requirements
 
-**Citation**
+The analysis is based on R version 4.0.3. For the gene regulatory network, a *Linux* system with 32 GB RAM and 32GB storage would be enough. For network analysis, a standard computer should be enough.
 
-If you use this pipeline, please cite: *(under development)*
+## Software installation guide
+
+Packages needed for the whole analysis.
+
+- `igraph` (R package, https://igraph.org/r/)
+- `mfinder` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
+- `Loregic` (R package for regulatory logics)
 
 ## Download code
 The code has been tested on R version 4.0.3 on Mac and Linux OS.
-
 ```r
-git clone https://github.com/cngupta/scNET.git
+git clone https://github.com/daifengwanglab/scNET
 cd scNET
 mkdir results
 ```
-___
 
-## Example
-The first step is to load external libraries and functions required to execute the pipeline:
+## Demo for analysis of brain cell type network characteristics
 
-```r
-source('scripts/load_libraries.R')
-source('scripts/functions_for_network_analysis.R')
-```
-
-##### Read demo data
-```r
-# Four brain cell type networks (these are random networks for demo purposes)
-# Each inferred using three different algorithms (GENIE3, PIDC, GRNBoost2)
-
-source('scripts/read_demo_data.R')
-```
-
-#### Consensus Network
-
-
-The first step is to create a consensus network using the `ara` function that implements the average rank aggregation method on
-networks inferred from different algorithms. The `ara` function expects as input a list of networks as data frames, the cell type tag, and the total number of edges to retain in the consensus.
-
-This step is optional if you have inferred the network using only one algorithm. Although it is expected that some filtering step is taken by the user to reduce the computational burden on downstream analysis, especially if a large number of cell types are to be analyzed.    
+A demo for aligning single-cell multi-modal data is available at `demo_brain_ct/`
 
 ```r
-#no. of edges to keep in the consensus; test different values
-nedges=1000 #just a random number of demo
-
-#create a list with cell type networks as the elements
-ex.list=list(ex_genie,ex_grnbst,ex_pidc)
-
-#call the ara function with the list of data frames, the cell type tag, and the total number of edges as arguments.
-ex.consensus=ara(ex.list,"ex",nedges)
-
+cd demo_brain_ct/
 ```
+Store all networks with .txt extension in the 'demo_data' directory. The demo contains outputs from scGRNom ().
 
-#### Node Centrality
-The `get_pageRank` function calculates node centrality, currently using the Page Rank algorithm.    
+Run the following lines of code in
+
+Get gene centrality
 ```r
-#modify to let user choose option (pr, hubscore, degree, betweenness)
-ex.pr=get_pageRank(ex.consensus,"ex")
+source('../scripts/get_centrality.R')
+source('../scripts/get_h_metric.R')
 ```
 
-#### Regulatory triplets  
-The next step is to find triplets in the network. We use the `edgelist2triplets` function of the `Loregic` package to report network motifs comprising of two TFs and a target gene (TF can also be a target gene).
+Get co-regulatory network modules
 ```r
-ex.loregic.out=edgelist2triplets(ex.consensus[,1:2])
+source('../scripts/find_module_coregnet.R')
 ```
 
-#### Triplet importance
-Next, the `calculate_triplet_hubScores` function calculates the importance of every triplet by reporting the sum of page rank scores of each gene in the triplet.
+Prioritize network genes using random forest classifier
 ```r
-ex.loregic.PRscores=calculate_triplet_hubScores(ex.loregic.out,ex.pr)
+source('../scripts/predict_AD_genes.svm.R')
 ```
-
-#### Cluster target genes into modules
-To cluster genes into functional modules, the first step is to connect gene-pairs if they have a high overlap between their predicted regulators. The `find_target_pairs` achieves this, based on a user defined threshold as one of the argument. Next, the output of `find_target_pairs` is passed into the function `detect_modules` to cluster genes into modules. The `detect_modules` function uses WGCNA's `TOMsimilarity` function and heirarchical clustering to report modules.
-```r
-
-#The threshold of 0.5 indicates 50% overlap between the predicted regulators of every target gene-pair. This threshold should ideally be tested for a range of values.
-
-ex.target_pairs=find_target_pairs(ex.consensus,0.5)
-ex.modules=detect_modules(ex.target_pairs)
-```
-
-#### Store results
-```r
-
-```
-
-Repeat these steps for each cell type in your dataset. Then, follow the steps below
-if you wish to compare networks and characterize each cell type.  
-#### Compare local and global network topologies across cell types
-*(under development)*

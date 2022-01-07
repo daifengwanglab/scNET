@@ -195,7 +195,6 @@ calculate_geneset_density = function(net,geneset) #fullNetwork, listOfQuerygenes
 
 detect_modules = function(matrix, msize)
 {
- #ref: http://pklab.med.harvard.edu/scw2014/WGCNA.html	#ref:
 
 	dissMatrix = 1 - matrix
 	# Call the hierarchical clustering function
@@ -204,14 +203,6 @@ detect_modules = function(matrix, msize)
 	# Module identification using dynamic tree cut:
 	dynamicMods = cutreeDynamic(dendro = geneTree,  method="tree", minClusterSize = minModuleSize)
 	dynamicColors = labels2colors(dynamicMods)
-
-	#name=paste(tag,"module_dendro.pdf", sep=".")
-	#name=paste("Figures/",name,sep="")
-#	print("pdf.....")
-	#pdf(paste(tag,"module_dendro.pdf", sep="."))
-	#plotDendroAndColors(geneTree, dynamicColors, "Dynamic Tree Cut", dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = "Gene dendrogram and module colors")
-	#dev.off()
-
 	#restGenes= (dynamicColors != "grey")
 	#diag(dissMatrix) = NA
 	#TOMplot(dissMatrix, geneTree, as.character(dynamicColors))
@@ -292,44 +283,6 @@ TopKEGGgsea = function(cent.mat,n,my_entrez_gene_info) #eg n=0.3 for 30%
 		}
 }
 
-
-#https://stackoverflow.com/questions/15624656/label-points-in-geom-point
-plot_scatter=function(df,tag,th){
-
-d=df
-d$Name=rownames(d)
-d$lfc=log2(d[,1]/d[,2])
-
-#p=ggplot(d, aes(x= AD.Mic.degree_in, y = Ctrl.Mic.degree_in, label = Name)) +
-#  geom_point(color = dplyr::case_when(d$lfc >th ~ "#1b9e77",
-#                                      d$lfc < -th ~ "#d95f02",
-#                                      TRUE ~ "grey50"),
-#             size = 3, alpha = 0.8) +
-#  geom_text_repel(data          = subset(d, lfc > th),
-#                  nudge_y       = 32 - subset(d, lfc > th)$lfc,
-#                  size          = 4,
-#                  box.padding   = 1.5,
-#                  point.padding = 0.5,
-#                  force         = 100,
-#                  segment.size  = 0.2,
-#                  segment.color = "grey50",
-#                  direction     = "x") +
-#  geom_label_repel(data         = subset(d, lfc < -th),
-#                  nudge_y       = 16 - subset(d, lfc < -th)$lfc,
-#                  size          = 4,
-#                  box.padding   = 0.5,
-#                  point.padding = 0.5,
-#                  force         = 100,
-#                  segment.size  = 0.2,
-#                  segment.color = "grey50",
-#                  direction     = "x") +
-#									labs(x="Centrality in AD", y="Centrality in control")+
-#  scale_x_continuous(expand = expand_scale(mult = c(0.2, .2))) +
-#  scale_y_continuous(expand = expand_scale(mult = c(0.1, .1))) +
-#	theme(text = element_text(size = 10)) +
-#	theme_bw(base_size=12)
-#p
-}
 
 
 

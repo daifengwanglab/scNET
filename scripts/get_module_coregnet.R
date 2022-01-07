@@ -1,7 +1,7 @@
 rm(list=ls())
-source('~/work/scNET-devel/scripts/load_libraries.R')
-source('~/work/scNET-devel/scripts/read_data.R')
-source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
+source('../scripts/read_data.R')
+source('../scripts/functions_for_network_analysis.R')
+source('../scripts/load_libraries.R')
 
 
 nets=ls(pattern="*\\.network")
@@ -28,27 +28,34 @@ for(i in 1:length(nets))
       assign(name, detect_modules(mat,msize))
 }
 
+all.modules=data.frame("gene"=NULL, "moduleID"=NULL, "celltype"=NULL, "condition"=NULL)
+list=ls(pattern=pattern)
 
-#plotting module 2 genes (mod 2 GO BP phospolipids)
+for (i in 1:length(list))
+{
+  name=list[i]
+  name=gsub(".network.JI.coreg.modules.JI_0.2.ModSize_30","",name)
+  tag=strsplit(name,"\\.")[[1]]
+  condition=tag[1]
+  cell=tag[2]
+  df=get(list[i])
+  df$cell=cell
+  df$condition=condition
+  all.modules=rbind(all.modules,df)
+}
 
-mod2=AD.Mic.network.JI.coreg.modules.JI_0.2.ModSize_30[AD.Mic.network.JI.coreg.modules.JI_0.2.ModSize_30$moduleID %in% "2",]$gene
-net=AD.Mic.network
-net=net[,c("TF","TG","abs_coef")]
-net=distinct(net)
+all.modules$module=paste(all.modules$cell,all.modules$condition,sep="_")
+all.modules$module=paste(all.modules$moduleID,all.modules$module,sep="_")
+all.modules=all.modules[,c("gene","module")]
 
-node.attr=as.data.frame(unique(net$TF))
-node.attr$type="TF"
-colnames(node.attr)=c("Gene","Type")
-write.table(node.attr,file="mod2.coregnet.attr",row.names=F,col.names=T,sep="\t",quote=FALSE)
+background=as.data.frame(unique(all.modules$gene))
+colnames(background)=""
 
-mat=find_target_pairs_matrix(net)
-mat[mat < 0.2] <-0
-indx.c=match(mod2,colnames(mat))
-indx.r=match(mod2,rownames(mat))
-mod2.coregnet.mat=mat[indx.r,indx.c]
-g=graph.adjacency(mod2.coregnet.mat,weighted=TRUE)
-df <- get.data.frame(igraph::simplify(g,remove.multiple = TRUE, remove.loops = TRUE))
+genesets=as.data.frame(unique(all.modules$module))
+colnames(genesets)="genesets"
+genesets$name=genesets$genesets
+genesets=unique(genesets)
 
-#select top edges to plot
-df.filtered=df[df$weight > 0.4,]
-write.table(df.filtered,file="mod2.coregnet.dat",row.names=F,col.names=T,sep="\t",quote=FALSE)
+
+#for paper
+write.table(all.modules,file="~/work/scNET_manuscript/AD_MIT/supp_data/all.modules.txt",row.names=F,col.names=T,sep="\t",quote=FALSE)

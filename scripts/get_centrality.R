@@ -1,12 +1,13 @@
 
+rm(list=ls())
+library(dplyr)
+library(igraph)
 
 
-source('~/work/scNET-devel/scripts/load_libraries.R')
-source('~/work/scNET-devel/scripts/read_data.R')
-source('~/work/scNET-devel/scripts/functions_for_network_analysis.R')
 
-my_entrez_gene_info=read.table('~/work/scNET_manuscript/genome/hgncSymbols_to_entrez.human.txt', header=T,sep="\t")
-colnames(my_entrez_gene_info)=c("entrezID","gene")
+source('../scripts/read_data.R')
+source('../scripts/functions_for_network_analysis.R')
+
 
 celltypes=c("Mic","Oli","Ex","In")
 
@@ -51,4 +52,4 @@ for (i in 2:length(list))
   old=merge(old, get(list[i]), by="gene", all=TRUE)
 }
 
-#write.table(old, file="centralities/centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)
+write.table(old, file="results/centrality_matrix.all-cellTypes.txt",col.names=TRUE,row.names=FALSE, sep="\t",quote=F)

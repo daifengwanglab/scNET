@@ -18,6 +18,7 @@ Packages needed for the whole analysis.
 - `mfinder` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
 - `Loregic` (R package for regulatory logics)
 
+
 ## Download code
 The code has been tested on R version 4.0.3 on Mac and Linux OS.
 ```r
@@ -43,6 +44,14 @@ source('../scripts/get_centrality.R')
 source('../scripts/get_h_metric.R')
 ```
 
+Get network motifs. This analysis is run outside of R using the mfinder tool. Please refer to mfinder manual on the link provided above.
+```r
+Rscript ../scripts/convert_symbols_to_entrezID.R demo_data/MIT.AD.Ex.grn.demo.txt Mic.AD
+/path/to/mfinder Mic.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Mic.AD -ospmem 38
+mv Mic.AD_MEMBERS.txt results/
+mv Mic.AD.node_symbol-integar.key.txt results/
+```
+
 Get co-regulatory network modules
 ```r
 source('../scripts/find_module_coregnet.R')
@@ -50,5 +59,5 @@ source('../scripts/find_module_coregnet.R')
 
 Prioritize network genes using random forest classifier
 ```r
-source('../scripts/predict_AD_genes.svm.R')
+source('../scripts/network_based_classifier.R')
 ```

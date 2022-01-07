@@ -1,9 +1,4 @@
 
-rm(list=ls())
-library(dplyr)
-
-
-
 
 source('../scripts/read_data.R')
 source('../scripts/functions_for_network_analysis.R')

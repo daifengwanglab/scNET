@@ -44,7 +44,7 @@ source('../scripts/get_centrality.R')
 source('../scripts/get_h_metric.R')
 ```
 
-### 2. Get network motifs.
+### 2. Get network motifs
 This analysis is run outside of R using the `mfinder` tool. Please refer to mfinder manual on the link provided above.
 Note that mfinder uses numeric gene IDs. The script `convert_symbols_to_entrezID.R` will assign numeric IDs to gene symbols and generate a `*.node_symbol-integar.key.txt` file for this mapping to be used later.
 ```r

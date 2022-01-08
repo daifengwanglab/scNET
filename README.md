@@ -57,8 +57,11 @@ rm Mic.AD.TF-TF.entrez.txt
 
 ### 3. Get regulatory logics
 An example of how to get regulatory logics for a single cell type GRN using `Loregic`.
+Loregic requires a binarized gene expression matrix. Please follow Loregic's documentation to create such a matrix.
+A toy matrix called `Mic.AD.binned_expr` for the purposes of this demo is available in the `data` directory.
+
 ```r
-Rscript run_loregic_FFL.R results/Mic.AD_MEMBERS.txt results/Mic.AD_MEMBERS.txt.node_symbol-integar.key.txt Mic AD 99
+Rscript run_loregic_FFL.R results/Mic.AD_MEMBERS.txt results/Mic.AD_MEMBERS.txt.node_symbol-integar.key.txt Mic AD data/Mic.AD.binned_expr 99
 ```
 
 ### 4. Get co-regulatory network modules

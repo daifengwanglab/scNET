@@ -11,7 +11,9 @@ data=read.table(args[1],skip=5, header=F)
 ids=read.table(args[2],header=T)
 ct=args[3]
 cond=args[4]
-npermut=as.numeric(args[5])
+gexpr=args[5]
+npermut=as.numeric(args[6])
+
 
 colnames(data)=c("RF1","RF2","target")
 
@@ -21,42 +23,7 @@ new[] = lapply(data, function(x) ids$symbol[match(x, ids$id)])
 new=distinct(new)
 
 #load expression matrix
-load("data/randomized_gexpr.rdata")
-
-if (cond == "AD")
-{
-  AD_cells.tmp=AD_cells[,c("TAG","broad.cell.type")]
-  AD_cells.tmp$new.broad.cell.type = sub('[.]', '.', make.names(AD_cells.tmp$broad.cell.type, unique=TRUE))
-  gexpr_AD.tmp=gexpr_AD
-  gexpr_AD.tmp$newrows=rownames(gexpr_AD.tmp)
-  table=setDT(gexpr_AD.tmp)
-  lookup=setDT(AD_cells.tmp)
-  setkey(gexpr_AD.tmp, "newrows")
-  setkey(AD_cells.tmp, "TAG")
-  joined=gexpr_AD.tmp[AD_cells.tmp]
-  joined.df=as.data.frame(joined)
-  rownames(joined.df)=joined.df$new.broad.cell.type
-  joined.df=joined.df[,1:ncol(gexpr_AD)]
-}
-
-if (cond == "Ctrl")
-{
-  CTL_cells.tmp=CTL_cells[,c("TAG","broad.cell.type")]
-  CTL_cells.tmp$new.broad.cell.type = sub('[.]', '.', make.names(CTL_cells.tmp$broad.cell.type, unique=TRUE))
-  gexpr_CTL.tmp=gexpr_CTL
-  gexpr_CTL.tmp$newrows=rownames(gexpr_CTL.tmp)
-  table=setDT(gexpr_CTL.tmp)
-  lookup=setDT(CTL_cells.tmp)
-  setkey(gexpr_CTL.tmp, "newrows")
-  setkey(CTL_cells.tmp, "TAG")
-  joined=gexpr_CTL.tmp[CTL_cells.tmp]
-  joined.df=as.data.frame(joined)
-  rownames(joined.df)=joined.df$new.broad.cell.type
-  joined.df=joined.df[,1:ncol(gexpr_CTL)]
-}
-
-cell.joined.df=joined.df[rownames(joined.df) %like% ct, ]
-gexpr= t(cell.joined.df[,log10(colSums(cell.joined.df)+1)> 1])
+ct.gexpr.bin=read.table(gexpr, header=T, row.names=1)
 
 nodes=append(unique(as.character(new$RF1)),unique(as.character(new$RF2)))
 nodes=append(unique(nodes),unique(as.character(new$target)))
@@ -68,18 +35,12 @@ nodes.ct.gexpr.bin=binarize.array(nodes.ct.gexpr[,1:100])
 ct.loregic.out=loregic(new,nodes.ct.gexpr.bin)
 
 filename=paste(ct,cond,sep=".")
-filename=paste(filename,"binned_expr",sep=".")
-write.table(data.frame("Gene"=rownames(nodes.ct.gexpr.bin),nodes.ct.gexpr.bin),file=filename, row.names=FALSE,quote=F, sep= "\t")
-
-filename=paste(ct,cond,sep=".")
 filename=paste(filename,"ffl_logics.txt",sep=".")
 write.table(ct.loregic.out,file=filename, col.names=TRUE, row.names=FALSE, sep="\t", quote=F)
 
 loregicOut = ct.loregic.out
 
 #find gate consistent trips and calculate pvalues
-
-#tmp=loregicOut %>% unite(x, c(RF1,RF2,target), sep="_")
 rownames(loregicOut)=paste(loregicOut$RF1,loregicOut$RF2,loregicOut$target,sep="_")
 loregicOut=loregicOut[,-c(1:3)]
 mat=loregicOut[apply(loregicOut[,], 1, function(x) !all(x==0)),] # remove gates with no scores

@@ -5,7 +5,7 @@ Dysregulation of gene expression in Alzheimer’s disease (AD) remains elusive, 
 
 ## Flow chart
 <p align="center">
-  <img width="1500" src="https://github.com/daifengwanglab/scNET/workflow.png">
+  <img src="https://github.com/daifengwanglab/scNET/workflow.png">
 </p>
 
 ## System requirements

@@ -1,8 +1,9 @@
 
-rm(list=ls())
 
+source('../scripts/load_libraries.R')
 source('../scripts/read_data.R')
 source('../scripts/functions_for_network_analysis.R')
+
 
 
 celltypes=c("Mic","Oli","Ex","In")

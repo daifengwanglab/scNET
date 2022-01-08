@@ -29,7 +29,7 @@ for(i in 1:length(nets))
 }
 
 all.modules=data.frame("gene"=NULL, "moduleID"=NULL, "celltype"=NULL, "condition"=NULL)
-list=ls(pattern=pattern)
+list=ls(pattern="network.JI.coreg.modules.JI_0.2.ModSize_30")
 
 for (i in 1:length(list))
 {
@@ -58,4 +58,4 @@ genesets=unique(genesets)
 
 
 #for paper
-write.table(all.modules,file="~/work/scNET_manuscript/AD_MIT/supp_data/all.modules.txt",row.names=F,col.names=T,sep="\t",quote=FALSE)
+write.table(all.modules,file="results/all.modules.txt",row.names=F,col.names=T,sep="\t",quote=FALSE)

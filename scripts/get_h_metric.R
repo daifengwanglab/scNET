@@ -1,5 +1,5 @@
 
-
+source('../scripts/load_libraries.R')
 source('../scripts/read_data.R')
 source('../scripts/functions_for_network_analysis.R')
 
@@ -14,7 +14,7 @@ celltypes=c("Mic","Oli","Ex","In")
   for(i in 1:length(nets))
   {
     name=nets[i]
-    tag=gsub(".demo.txt.network","",name)
+    tag=gsub(".network","",name)
     name=paste(tag,"hie.ht",sep=".")
     distTable=data.frame(gene=NULL,h=NULL)
     distTblName=paste(name, "randomDist",sep=".")
@@ -40,7 +40,7 @@ celltypes=c("Mic","Oli","Ex","In")
   AD.all.cts.dist=data.frame(gene=NULL,h=NULL,cell=NULL,network=NULL)
   for (i in 1:length(celltypes))
   {
-    pattern=paste(celltypes[i],".grn.hie.ht",sep="")
+    pattern=paste(celltypes[i],".hie.ht",sep="")
     pattern=paste("AD",pattern,sep=".")
     df=get(pattern)
     colnames(df)=c("gene","h")

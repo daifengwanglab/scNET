@@ -16,7 +16,9 @@ Packages needed for the whole analysis.
 
 - `igraph` (R package, https://igraph.org/r/)
 - `mfinder` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
-- `Loregic` (R package for regulatory logics)
+- `Loregic` (R package for regulatory logics, https://github.com/gersteinlab/Loregic.git)
+- `WGCNA` (R package for network module detection, https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/)
+- `randomForest` (R package for binary classification)
 
 ## Download code
 The code has been tested on R version 4.0.3 on Linux and Mac OS.
@@ -37,27 +39,35 @@ mkdir results
 ```
 Run the following lines of code in the R console. The outputs will be stored in the `results` directory
 
-### Get gene centrality
+### 1. Get gene centrality
 ```r
 source('../scripts/get_centrality.R')
 source('../scripts/get_h_metric.R')
 ```
 
-### Get network motifs.
+### 2. Get network motifs.
 This analysis is run outside of R using the `mfinder` tool. Please refer to mfinder manual on the link provided above.
+Note that mfinder uses numeric gene IDs. The script `convert_symbols_to_entrezID.R` will assign numeric IDs to gene symbols and generate a `*.node_symbol-integar.key.txt` file for this mapping to be used later.
 ```r
-Rscript ../scripts/convert_symbols_to_entrezID.R demo_data/MIT.AD.Ex.grn.demo.txt Mic.AD
+Rscript ../scripts/convert_symbols_to_entrezID.R data/MIT.AD.Mic.grn.txt Mic.AD
 /path/to/mfinder Mic.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Mic.AD -ospmem 38
 mv Mic.AD_MEMBERS.txt results/
-mv Mic.AD.node_symbol-integar.key.txt results/
+mv Mic.AD_MEMBERS.txt.node_symbol-integar.key.txt results/
+rm Mic.AD.TF-TF.entrez.txt
 ```
 
-### Get co-regulatory network modules
+### 3. Get regulatory logics
+An example of how to get regulatory logics for a single cell type GRN using `Loregic`.
 ```r
-source('../scripts/find_module_coregnet.R')
+Rscript run_loregic_FFL.R results/Mic.AD_MEMBERS.txt results/Mic.AD_MEMBERS.txt.node_symbol-integar.key.txt Mic AD 99
 ```
 
-### Prioritize network genes using random forest classifier
+### 4. Get co-regulatory network modules
+```r
+source('../scripts/get_module_coregnet.R')
+```
+
+### 5. Prioritize network genes using random forest classifier
 ```r
 source('../scripts/network_based_classifier.R')
 ```

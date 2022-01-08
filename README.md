@@ -26,8 +26,7 @@ cd scNET
 ```
 
 ## Download data
-Download brain cell type gene regulatory networks for four cell types from Zenodo (DOI:10.5281/zenodo.5829585) and store them in the demo_data directory. These networks link TFs to target genes based on
-open chromatin data, chromatin interaction maps, and gene expression correlations in control and AD cells. scGRNom pipeline was used to predict the networks.
+Download brain cell type gene regulatory networks for four cell types from Zenodo `(DOI:10.5281/zenodo.5829585)` and store them in the `data` directory. These networks link TFs to target genes based on open chromatin data, chromatin interaction maps, and gene expression correlations in control and AD cells. `scGRNom` pipeline was used to predict the networks.
 
 
 ## Analysis of brain cell type gene regulatory network characteristics
@@ -36,7 +35,7 @@ open chromatin data, chromatin interaction maps, and gene expression correlation
 cd ADnets/
 mkdir results
 ```
-Run the following lines of code in the R console
+Run the following lines of code in the R console. The outputs will be stored in the `results` directory
 
 ### Get gene centrality
 ```r
@@ -44,7 +43,8 @@ source('../scripts/get_centrality.R')
 source('../scripts/get_h_metric.R')
 ```
 
-Get network motifs. This analysis is run outside of R using the mfinder tool. Please refer to mfinder manual on the link provided above.
+### Get network motifs.
+This analysis is run outside of R using the `mfinder` tool. Please refer to mfinder manual on the link provided above.
 ```r
 Rscript ../scripts/convert_symbols_to_entrezID.R demo_data/MIT.AD.Ex.grn.demo.txt Mic.AD
 /path/to/mfinder Mic.Ctrl.TF-TF.entrez.txt -s 3 -r 1000 -f Mic.AD -ospmem 38
@@ -52,12 +52,12 @@ mv Mic.AD_MEMBERS.txt results/
 mv Mic.AD.node_symbol-integar.key.txt results/
 ```
 
-Get co-regulatory network modules
+### Get co-regulatory network modules
 ```r
 source('../scripts/find_module_coregnet.R')
 ```
 
-Prioritize network genes using random forest classifier
+### Prioritize network genes using random forest classifier
 ```r
 source('../scripts/network_based_classifier.R')
 ```

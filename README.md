@@ -18,21 +18,25 @@ Packages needed for the whole analysis.
 - `mfinder` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
 - `Loregic` (R package for regulatory logics)
 
-
 ## Download code
-The code has been tested on R version 4.0.3 on Mac and Linux OS.
+The code has been tested on R version 4.0.3 on Linux and Mac OS.
 ```r
 git clone https://github.com/daifengwanglab/scNET
 cd scNET
-mkdir results
 ```
+
+## Download data
+Download brain cell type gene regulatory networks for four cell types from Zenodo (DOI:10.5281/zenodo.5829585) and store them in the demo_data directory. These networks link TFs to target genes based on
+open chromatin data, chromatin interaction maps, and gene expression correlations in control and AD cells. scGRNom pipeline was used to predict the networks.
+
 
 ## Demo for analysis of brain cell type network characteristics
 
 A demo for aligning single-cell multi-modal data is available at `demo_brain_ct/`
 
 ```r
-cd demo_brain_ct/
+cd ADnets/
+mkdir results
 ```
 Store all networks with .txt extension in the 'demo_data' directory. The demo contains outputs from scGRNom ().
 

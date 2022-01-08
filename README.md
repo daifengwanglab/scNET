@@ -19,6 +19,7 @@ Packages needed for the whole analysis.
 - `Loregic` (R package for regulatory logics, https://github.com/gersteinlab/Loregic.git)
 - `WGCNA` (R package for network module detection, https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/)
 - `randomForest` (R package for binary classification)
+- other supporting packages should install automatically. Check `load_libraries.R` file in the `scripts` directory
 
 ## Download code
 The code has been tested on R version 4.0.3 on Linux and Mac OS.

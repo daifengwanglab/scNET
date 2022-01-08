@@ -30,19 +30,15 @@ Download brain cell type gene regulatory networks for four cell types from Zenod
 open chromatin data, chromatin interaction maps, and gene expression correlations in control and AD cells. scGRNom pipeline was used to predict the networks.
 
 
-## Demo for analysis of brain cell type network characteristics
-
-A demo for aligning single-cell multi-modal data is available at `demo_brain_ct/`
+## Analysis of brain cell type gene regulatory network characteristics
 
 ```r
 cd ADnets/
 mkdir results
 ```
-Store all networks with .txt extension in the 'demo_data' directory. The demo contains outputs from scGRNom ().
+Run the following lines of code in the R console
 
-Run the following lines of code in
-
-Get gene centrality
+### Get gene centrality
 ```r
 source('../scripts/get_centrality.R')
 source('../scripts/get_h_metric.R')

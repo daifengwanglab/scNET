@@ -10,7 +10,7 @@ Dysregulation of gene expression in Alzheimer’s disease (AD) remains elusive, 
 
 The analysis is based on R version 4.0.3. For the gene regulatory network, a *Linux* system with 32 GB RAM and 32GB storage would be enough. For network analysis, a standard computer should be enough.
 
-## Software installation guide
+## Software installation
 
 Packages needed for the whole analysis.
 
@@ -31,8 +31,6 @@ cd scNET
 ## Download data
 Download brain cell type gene regulatory networks for four cell types from Zenodo `(DOI:10.5281/zenodo.5829585)` and store them in the `data` directory. These networks link TFs to target genes based on open chromatin data, chromatin interaction maps, and gene expression correlations in control and AD cells. `scGRNom` pipeline was used to predict the networks.
 
-
-## Analysis of brain cell type gene regulatory network characteristics
 
 ```r
 cd ADnets/

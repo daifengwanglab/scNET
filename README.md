@@ -14,11 +14,11 @@ The analysis is based on R version 4.0.3. For the gene regulatory network, a *Li
 
 Packages needed for the whole analysis.
 
-- `igraph` (R package, https://igraph.org/r/)
-- `mfinder` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
-- `Loregic` (R package for regulatory logics, https://github.com/gersteinlab/Loregic.git)
-- `WGCNA` (R package for network module detection, https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/)
-- `randomForest` (R package for binary classification)
+- `igraph v1.2.6`  (R package, https://igraph.org/r/)
+- `mfinder v1.21` (motif finding tool from https://www.weizmann.ac.il/mcb/UriAlon/download/network-motif-software)
+- `Loregic v1` (R package for regulatory logics, https://github.com/gersteinlab/Loregic.git)
+- `WGCNA 1.70-3` (R package for network module detection, https://horvath.genetics.ucla.edu/html/CoexpressionNetwork/Rpackages/WGCNA/)
+- `randomForest 4.6-14` (R package for binary classification)
 - other supporting packages should install automatically. Check `load_libraries.R` file in the `scripts` directory
 
 ## Download code
